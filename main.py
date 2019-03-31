@@ -24,6 +24,11 @@ from urllib.parse import urlencode, parse_qsl
 import xbmcgui
 import xbmcplugin
 
+try:
+    from http.cookiejar import CookieJar
+except ImportError:
+    from cookielib import CookieJar
+
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
 # Get the plugin handle as an integer number.
