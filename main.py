@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Module: default
-# Author: Roman V. M.
+# Author: Biro D.B.
 # Created on: 28.11.2014
 # License: GPL v.3 https://www.gnu.org/copyleft/gpl.html
 """
@@ -275,7 +275,6 @@ import sys
 import datetime
 import xml.etree.ElementTree as ET
 
-print "Starting..."
 
 CHANNELS=[
     {'name': 'DunaTV', 'id': 'dunalive', 'num': '3' },
@@ -298,7 +297,7 @@ cs_delay = 5
 class CsatornakURLopener(urllib.FancyURLopener):
     version = cs_agent
 
-print "Session: " + cs_file
+#print "Session: " + cs_file
 
 # tries to limit deadlocks due to multiple runs
 # fcntl for file locking may not be available on some platforms
@@ -399,4 +398,3 @@ for i in CHANNELS:
 xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=True)
 #XBMC.Container.Update
 #cs_player.play("https:" + cs_stream, listitem)
-print "Done."
