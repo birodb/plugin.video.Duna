@@ -24,10 +24,10 @@ from urllib.parse import urlencode, parse_qsl
 import xbmcgui
 import xbmcplugin
 
-try:
-    from http.cookiejar import CookieJar
-except ImportError:
-    from cookielib import CookieJar
+from urllib.request import Request
+from http.cookiejar import CookieJar
+#cookiejar = cookiejar.CookieJar()
+#opener = request.build_opener(request.HTTPCookieProcessor(cookiejar))
 
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
