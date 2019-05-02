@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # Module: default
 # Author: Biro D.B.
-# Created on: 28.11.2014
+# Credit: romanvm - author of original video plugin sample
+# Created on: 28.04.2019
 # License: GPL v.3 https://www.gnu.org/copyleft/gpl.html
 """
 Example video plugin that is compatible with both Python 2 and 3
-
 Compatibility features are provided by ``script.module.future`` library addon.
 """
 
@@ -19,13 +19,14 @@ from future.utils import iterkeys
 # so the code can work in both versions.
 # In Python 3 they do nothing and can be safely removed.
 # Normal imports for your addon:
+
 import sys
-from urllib.parse import urlencode, parse_qsl
+import json
+import re
+
 import xbmcgui
 import xbmcplugin
 
-import json
-import re
 try:
     from html.parser import HTMLParser
 except ImportError:
@@ -38,6 +39,26 @@ try:
     from urllib.request import build_opener, HTTPCookieProcessor, Request
 except ImportError:
     from urllib2 import build_opener, HTTPCookieProcessor, Request
+
+from urllib.parse import urlencode, parse_qsl
+
+# Get the plugin url in plugin:// notation.
+_url = sys.argv[0]
+# Get the plugin handle as an integer number.
+_handle = int(sys.argv[1])
+
+cs_agent = "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25"
+
+def get_url(**kwargs):
+    """
+    Create a URL for calling the plugin recursively from the given set of keyword arguments.
+
+    :param kwargs: "argument=value" pairs
+    :return: plugin call URL
+    :rtype: str
+    """
+    return '{0}?{1}'.format(_url, urlencode(kwargs))
+
 
 class MyHTMLParser(HTMLParser):
     def __init__(self, *args, **kwargs):
@@ -81,6 +102,8 @@ def get_stream_url(url):
     #print(url)
     cj = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cj))
+	#opener.addheaders = {'User-agent':'Custom user agent'}
+	#opener.version = cs_agent
     p = MyHTMLParser()
     try:
         request = Request(url)
@@ -91,7 +114,8 @@ def get_stream_url(url):
         token_id = d.get('streamId')
         if not token_id:
             token_id = d.get('token')
-        url = '{}/player.php?video={}'.format(p.player_js.split('/js')[0], token_id)
+			#contentid={0}
+        url = '{}/player.php?video={}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&embedded=0'.format(p.player_js.split('/js')[0], token_id)
         #print(url)
         request = Request(url)
         response = opener.open(request)
@@ -101,11 +125,16 @@ def get_stream_url(url):
         print(e)
     return p.stream_url
 
+CHANNELS=[
+    {'name': 'DunaTV', 'id': 'dunalive', 'id2': 'duna-elo', 'num': '3' },
+    {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'dunaworld-elo', 'num': '4' },
+    {'name': 'MTV1', 'id': 'mtv1live', 'id2': 'm1-elo', 'num': '1' },
+    {'name': 'MTV2', 'id': 'mtv2live', 'id2': 'm2-elo', 'num': '2' },
+    {'name': 'MTV4', 'id': 'mtv4live', 'id2': 'm4-elo', 'num': '30' },
+    {'name': 'MTV5', 'id': 'mtv5live', 'id2': 'm5-elo', 'num': '33' }
+]
 
-# Get the plugin url in plugin:// notation.
-_url = sys.argv[0]
-# Get the plugin handle as an integer number.
-_handle = int(sys.argv[1])
+
 
 # Free sample videos are provided by www.vidsplay.com
 # Here we use a fixed set of properties simply for demonstrating purposes
@@ -152,17 +181,6 @@ VIDEOS = {'Animals': [{'name': 'Crab',
                      ]}
 
 
-def get_url(**kwargs):
-    """
-    Create a URL for calling the plugin recursively from the given set of keyword arguments.
-
-    :param kwargs: "argument=value" pairs
-    :return: plugin call URL
-    :rtype: str
-    """
-    return '{0}?{1}'.format(_url, urlencode(kwargs))
-
-
 def get_categories():
     """
     Get the list of video categories.
@@ -198,7 +216,7 @@ def get_videos(category):
     return VIDEOS[category]
 
 
-def list_categories():
+def list_categories_old():
     """
     Create the list of video categories in the Kodi interface.
     """
@@ -238,6 +256,24 @@ def list_categories():
         xbmcplugin.addDirectoryItem(_handle, url, list_item, is_folder)
     # Add a sort method for the virtual folder items (alphabetically, ignore articles)
     xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
+    # Finish creating a virtual folder.
+    xbmcplugin.endOfDirectory(_handle)
+
+def list_categories():
+    """
+    Create the list of video categories in the Kodi interface.
+    """
+    # Set plugin category. It is displayed in some skins as the name
+    # of the current section.
+    xbmcplugin.setPluginCategory(_handle, 'Mediaklikk Video Collection')
+    # Set plugin content. It allows Kodi to select appropriate views
+    # for this type of content.
+    xbmcplugin.setContent(_handle, 'videos')
+    # Iterate through categories
+    for channel in CHANNELS:
+    	add_live_tv(channel)
+    # Add a sort method for the virtual folder items (alphabetically, ignore articles)
+    # xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
     # Finish creating a virtual folder.
     xbmcplugin.endOfDirectory(_handle)
 
@@ -318,7 +354,7 @@ def router(paramstring):
             list_videos(params['category'])
         elif params['action'] == 'play':
             # Play a video from a provided URL.
-            play_video(params['video'])
+            play_video(get_stream_url(params['video']))
         else:
             # If the provided paramstring does not contain a supported action
             # we raise an exception. This helps to catch coding errors,
@@ -328,12 +364,6 @@ def router(paramstring):
         # If the plugin is called from Kodi UI without any parameters,
         # display the list of video categories
         list_categories()
-
-
-if __name__ == '__main__':
-    # Call the router function and pass the plugin call parameters to it.
-    # We use string slicing to trim the leading '?' from the plugin call paramstring
-    router(sys.argv[2][1:])
     
 import os
 import time
@@ -349,20 +379,7 @@ import datetime
 import xml.etree.ElementTree as ET
 
 
-CHANNELS=[
-    {'name': 'DunaTV', 'id': 'dunalive', 'num': '3' },
-    {'name': 'DunaWorld', 'id': 'dunaworldlive', 'num': '4' },
-    {'name': 'MTV1', 'id': 'mtv1live', 'num': '1' },
-    {'name': 'MTV2', 'id': 'mtv2live', 'num': '2' },
-    {'name': 'MTV4', 'id': 'mtv4live', 'num': '30' },
-    {'name': 'MTV5', 'id': 'mtv5live', 'num': '33' }
-]
-
 # setup
-#cs_url = "http://player.mediaklikk.hu/player/player-inside-full3.php?userid=mtva&streamid=dunalive"
-#cs_url = "https://player.mediaklikk.hu/playernew/player.php?video=dunalive&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&contentid=dunalive&embedded=0"
-cf_url = "https://player.mediaklikk.hu/playernew/player.php?video={0}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&contentid={0}&embedded=0"
-cs_agent = "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25"
 cs_name = xbmcaddon.Addon().getAddonInfo("id")
 cs_file = os.path.join(xbmc.translatePath("special://temp"), cs_name + ".session")
 cs_delay = 5
@@ -370,23 +387,6 @@ cs_delay = 5
 class CsatornakURLopener(urllib.FancyURLopener):
     version = cs_agent
 
-#print "Session: " + cs_file
-
-# tries to limit deadlocks due to multiple runs
-# fcntl for file locking may not be available on some platforms
-if os.path.exists(cs_file) and time.time() - os.path.getmtime(cs_file) < cs_delay:
-    print "Recently ran, exiting."
-    sys.exit(0)
-else:
-    with open(cs_file, "a+"):
-	os.utime(cs_file, None)
-
-cs_player = xbmc.Player()
-
-# stop playing and wait
-#cs_player.stop()
-#while cs_player.isPlaying():
-#	xbmc.sleep(10)
 	
 urllib._urlopener = CsatornakURLopener()
 def load_page(pg_url):
@@ -398,19 +398,6 @@ def load_page(pg_url):
     return page_content
 
 def add_live_tv(c):
-    cs_url = cf_url.format(c['id'])
-    cs_content = load_page(cs_url)
-    cs_stream = ''
-
-    for i in re.finditer('pl\.setup\(([^;]+)\);', cs_content):
-        
-        pl = json.loads(i.group(1))['playlist']
-        n = 0
-        if len(pl) > 1:
-            n = 1
-        cs_stream = pl[n]['file'] 
-        break
-
     today = datetime.date.today()
     now = datetime.datetime.now()
     prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
@@ -450,11 +437,35 @@ def add_live_tv(c):
                 name = '[{0}] {1} ({2}, {3}perc)'.format(c['name'], title, start_date.strftime('%H:%M'), play_min)
             else:
                 name = '[{0}] {1} ({2}, {3:02}mp)'.format(c['name'], title, start_date.strftime('%H:%M'), play_sec)
-            liz = xbmcgui.ListItem(name)
-            liz.setInfo('video', {'title': name, 'duration': play_dt.seconds, 'plot': description})
-            liz.setProperty("IsPlayable" , "True")
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), "https:" + cs_stream, liz)
-            cnt = cnt + 1
+			
+			# Create a list item with a text label and a thumbnail image.
+			list_item = xbmcgui.ListItem(label=name)
+			# Set graphics (thumbnail, fanart, banner, poster, landscape etc.) for the list item.
+			# Here we use the same image for all items for simplicity's sake.
+			# In a real-life plugin you need to set each image accordingly.
+			#list_item.setArt({'thumb': VIDEOS[category][0]['thumb'],
+			#				  'icon': VIDEOS[category][0]['thumb'],
+			#				  'fanart': VIDEOS[category][0]['thumb']})
+			# Set additional info for the list item.
+			# Here we use a category name for both properties for for simplicity's sake.
+			# setInfo allows to set various information for an item.
+			# For available properties see the following link:
+			# https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
+			# 'mediatype' is needed for a skin to display info for this ListItem correctly.
+            list_item.setInfo('video', {'title': name, 'duration': play_dt.seconds, 'plot': description, 'mediatype': 'video'})
+			# Create a URL for a plugin recursive call.
+			# Example: plugin://plugin.video.example/?action=listing&category=Animals
+			list_item.setProperty('IsPlayable', 'true')
+			# Create a URL for a plugin recursive call.
+			# Example: plugin://plugin.video.example/?action=play&video=https://www.vidsplay.com/wp-content/uploads/2017/04/crab.mp4
+			url = get_url(action='play', video='https://www.mediaklikk.hu/{}/'.format(c['id2']))
+			# Add the list item to a virtual Kodi folder.
+			# is_folder = False means that this item won't open any sub-list.
+			is_folder = False
+			# Add our item to the Kodi virtual folder listing.
+			xbmcplugin.addDirectoryItem(_handle, url, list_item, is_folder)
+
+			cnt = cnt + 1
             if cnt > 2:
                 break
 
@@ -462,66 +473,83 @@ def add_live_tv(c):
     #liz = xbmcgui.ListItem(' '.join((cs_name, json.dumps(sys.argv), str(date.today())))))#'XBMC list Example Title')
 
 # play stream
-#print "Playing: " + cs_stream
 #xbmcgui.Dialog().ok(cs_name, json.dumps(sys.argv), str(date.today()))
-for i in CHANNELS:
-    add_live_tv(i)
+#for i in CHANNELS:
+#    add_live_tv(i)
+#bmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=True)
+#BMC.Container.Update
+#"""
+#ttps://www.mediaklikk.hu/m1-elo
+#tml/head/<script type='text/javascript' src='https://player.mediaklikk.hu/playernew/js/mtva-player.js?ver=3.6.1'></script>
+# @param typeParam 'live', vagy 'vod'
+#* @param streamIdParam Élőnél a stream identifier, vodnál a cdn path
+#* @param baseUrlParam Oldal megtekintést gyűjtő interfész url-je
+#
+#""
+#""
+#ttps://player.mediaklikk.hu/playernew/js/mtva-player.js?ver=3.6.1
+#       var defaultSetup = {
+# ...
+#             playerLoader: "player.php",
+#           liveClass: ["mtva-player", "mtva-player-live"],
+#           vodClass: ["mtva-player", "mtva-player-vod"]
+#       };
+#       var currentSetup = clone_object(defaultSetup);
+#""
+#""
+#ttps://player.mediaklikk.hu/playernew/player.php?video=mtv1live&noflash=yes&osfamily=OS X&osversion=10.14&browsername=Firefox&browserversion=66.0&title=M1&contentid=mtv1live&embedded=0
+#       <script>jwplayer.key="G1TfeXueehbr/n/4/MCAEQq/kWlgDr1vbiAgbbRu5HCfpFmI";</script>
+#div id="player"></div>
+#script>
+#   var pl = jwplayer('player');
+#   var _contentId = null;
+##   pl.setup( {
+#   "autostart": "true",
+#   "width": "100%",
+#   "aspectratio": "16:9",
+#   "primary": "html5",
+#   "advertising": {
+#       "client": "vast"
+#   },
+#   "cast": {},
+#   "playlist": [
+#       {
+#           "file": "\/\/c201-node61-cdn.connectmedia.hu\/1100\/294ac424d9e378e1723d021c4889bbbe\/5cac0a95\/index.m3u8?v=5i",
+#           "type": "hls"
+#       }
+#   ]
+# );
+##""
+#""
+#ttps://www.mediaklikk.hu/cikk/2019/04/02/ide-kattintva-visszanezhetik-az-egynyari-kaland-elso-evadat/
+#p><strong>1. rész: Beköltözés</strong></p>
+#div class='hmsVideoPlayerWrapper'>
+#div class='hmsArticleViewerVideo'>
+#div id="player_81925_1" class="live-player-container"></div>
+#<p><script defer type="text/javascript">
+#				mtva_player_manager.player(document.getElementById("player_81925_1"), {"token":"U2FsdGVkX1%2B%2F635p7jQljbzG6a9v6vrE0mnSBqna0wIuavyQ73V5ah9DKXTf1LSFdevSodT%2B%2F9qmMQoXAHV5PqUXZ1xdf2OLKdbsAyNjIrn4KREoKvCOwPlKK1tn9sCXJPwH9YHi36O6qQ3zm3DQQKB7TownSWp7pp8RNX7KVFQ%3D","autostart":false,"debug":false,"bgImage":"\/\/mediaklikk.cms.mtv.hu\/wp-content\/uploads\/sites\/4\/2015\/04\/Egynyári-kaland-1.epizód-fotókredit-MTVA-Megafilm-Bara-Szilvia-6-e1554212213668-1024x576.jpg","adVastPreroll":"https:\/\/gemhu.adocean.pl\/ad.xml?id=VAAxe3zcXKSHojvBEJMZNkSV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria, 1. rész), Beköltözés ","series":"Egyéb","contentId":838544,"embedded":true});
+#</script></div>
+#"""
 
 
-xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=True)
-#XBMC.Container.Update
-#cs_player.play("https:" + cs_stream, listitem)
-"""
-https://www.mediaklikk.hu/m1-elo
-html/head/<script type='text/javascript' src='https://player.mediaklikk.hu/playernew/js/mtva-player.js?ver=3.6.1'></script>
-* @param typeParam 'live', vagy 'vod'
- * @param streamIdParam Élőnél a stream identifier, vodnál a cdn path
- * @param baseUrlParam Oldal megtekintést gyűjtő interfész url-je
- 
-"""
-"""
-https://player.mediaklikk.hu/playernew/js/mtva-player.js?ver=3.6.1
-        var defaultSetup = {
-  ...
-              playerLoader: "player.php",
-            liveClass: ["mtva-player", "mtva-player-live"],
-            vodClass: ["mtva-player", "mtva-player-vod"]
-        };
-        var currentSetup = clone_object(defaultSetup);
-"""
-"""
-https://player.mediaklikk.hu/playernew/player.php?video=mtv1live&noflash=yes&osfamily=OS X&osversion=10.14&browsername=Firefox&browserversion=66.0&title=M1&contentid=mtv1live&embedded=0
-        <script>jwplayer.key="G1TfeXueehbr/n/4/MCAEQq/kWlgDr1vbiAgbbRu5HCfpFmI";</script>
-<div id="player"></div>
-<script>
-    var pl = jwplayer('player');
-    var _contentId = null;
+if __name__ == '__main__':
+    # Call the router function and pass the plugin call parameters to it.
+    # We use string slicing to trim the leading '?' from the plugin call paramstring
+    router(sys.argv[2][1:])
+	#print "Session: " + cs_file
 
-    pl.setup( {
-    "autostart": "true",
-    "width": "100%",
-    "aspectratio": "16:9",
-    "primary": "html5",
-    "advertising": {
-        "client": "vast"
-    },
-    "cast": {},
-    "playlist": [
-        {
-            "file": "\/\/c201-node61-cdn.connectmedia.hu\/1100\/294ac424d9e378e1723d021c4889bbbe\/5cac0a95\/index.m3u8?v=5i",
-            "type": "hls"
-        }
-    ]
-} );
+	# tries to limit deadlocks due to multiple runs
+	# fcntl for file locking may not be available on some platforms
+	#if os.path.exists(cs_file) and time.time() - os.path.getmtime(cs_file) < cs_delay:
+	#	print "Recently ran, exiting."
+	#	sys.exit(0)
+	#else:
+	#	with open(cs_file, "a+"):
+	#	os.utime(cs_file, None)
 
-"""
-"""
-https://www.mediaklikk.hu/cikk/2019/04/02/ide-kattintva-visszanezhetik-az-egynyari-kaland-elso-evadat/
-<p><strong>1. rész: Beköltözés</strong></p>
-<div class='hmsVideoPlayerWrapper'>
-<div class='hmsArticleViewerVideo'>
-<div id="player_81925_1" class="live-player-container"></div>
-<p><script defer type="text/javascript">
-				mtva_player_manager.player(document.getElementById("player_81925_1"), {"token":"U2FsdGVkX1%2B%2F635p7jQljbzG6a9v6vrE0mnSBqna0wIuavyQ73V5ah9DKXTf1LSFdevSodT%2B%2F9qmMQoXAHV5PqUXZ1xdf2OLKdbsAyNjIrn4KREoKvCOwPlKK1tn9sCXJPwH9YHi36O6qQ3zm3DQQKB7TownSWp7pp8RNX7KVFQ%3D","autostart":false,"debug":false,"bgImage":"\/\/mediaklikk.cms.mtv.hu\/wp-content\/uploads\/sites\/4\/2015\/04\/Egynyári-kaland-1.epizód-fotókredit-MTVA-Megafilm-Bara-Szilvia-6-e1554212213668-1024x576.jpg","adVastPreroll":"https:\/\/gemhu.adocean.pl\/ad.xml?id=VAAxe3zcXKSHojvBEJMZNkSV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria, 1. rész), Beköltözés ","series":"Egyéb","contentId":838544,"embedded":true});
-</script></div>
-"""
+	#cs_player = xbmc.Player()
+
+	# stop playing and wait
+	#cs_player.stop()
+	#while cs_player.isPlaying():
+	#	xbmc.sleep(10)
