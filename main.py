@@ -24,10 +24,83 @@ from urllib.parse import urlencode, parse_qsl
 import xbmcgui
 import xbmcplugin
 
-from urllib.request import Request
-from http.cookiejar import CookieJar
-#cookiejar = cookiejar.CookieJar()
-#opener = request.build_opener(request.HTTPCookieProcessor(cookiejar))
+import json
+import re
+try:
+    from html.parser import HTMLParser
+except ImportError:
+    from HTMLParser import HTMLParser
+try:
+    from http.cookiejar import CookieJar
+except ImportError:
+    from cookielib import CookieJar
+try:
+    from urllib.request import build_opener, HTTPCookieProcessor, Request
+except ImportError:
+    from urllib2 import build_opener, HTTPCookieProcessor, Request
+
+class MyHTMLParser(HTMLParser):
+    def __init__(self, *args, **kwargs):
+        HTMLParser.__init__(self, *args, **kwargs)
+        self.curr_tag = None
+        self.player_data = []
+        self.player_js = None
+        self.stream_url = ""
+
+    def handle_starttag(self, tag, attrs):
+        self.curr_tag = tag
+        if tag == "script":
+            if attrs:
+                src = dict(attrs).get("src", "")
+                if "player.js" in src:
+                    #print("Encountered a start tag:", tag, attrs)
+                    self.player_js = src
+
+    def handle_endtag(self, tag):
+        #print("Encountered an end tag :", tag)
+        pass
+
+    def handle_data(self, data):
+        if self.curr_tag == "script":
+            if "mtva_player_" in data:
+                for i in re.finditer('[^\{]*(\{[^;]+)\);', data):
+                    pl = json.loads(i.group(1))
+                    self.player_data.append(pl)
+                    #print("Encountered some data  :", json.dumps(pl))
+            elif "pl.setup" in data:
+                for i in re.finditer('pl.setup\(\s*(\{[^;]+)\);', data):
+                    setup_data = json.loads(i.group(1))
+                    pl = setup_data.get('playlist', [])
+                    self.stream_url = 'https:' + pl[1 if len(pl) > 1 else 0]['file']
+                    #self.player_data.append(pl)
+                    #print("Encountered some data  :", json.dumps(setup_data))
+                pass
+        pass
+
+def get_stream_url(url):
+    #print(url)
+    cj = CookieJar()
+    opener = build_opener(HTTPCookieProcessor(cj))
+    p = MyHTMLParser()
+    try:
+        request = Request(url)
+        response = opener.open(request)
+        p.feed(response.read())
+        response.close()
+        d = p.player_data[0]
+        token_id = d.get('streamId')
+        if not token_id:
+            token_id = d.get('token')
+        url = '{}/player.php?video={}'.format(p.player_js.split('/js')[0], token_id)
+        #print(url)
+        request = Request(url)
+        response = opener.open(request)
+        p.feed(response.read())
+        response.close()
+    except RuntimeError as e:
+        print(e)
+    return p.stream_url
+
 
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
