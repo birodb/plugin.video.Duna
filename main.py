@@ -398,3 +398,57 @@ for i in CHANNELS:
 xbmcplugin.endOfDirectory(int(sys.argv[1]), cacheToDisc=True)
 #XBMC.Container.Update
 #cs_player.play("https:" + cs_stream, listitem)
+"""
+https://www.mediaklikk.hu/m1-elo
+html/head/<script type='text/javascript' src='https://player.mediaklikk.hu/playernew/js/mtva-player.js?ver=3.6.1'></script>
+* @param typeParam 'live', vagy 'vod'
+ * @param streamIdParam Élőnél a stream identifier, vodnál a cdn path
+ * @param baseUrlParam Oldal megtekintést gyűjtő interfész url-je
+ 
+"""
+"""
+https://player.mediaklikk.hu/playernew/js/mtva-player.js?ver=3.6.1
+        var defaultSetup = {
+  ...
+              playerLoader: "player.php",
+            liveClass: ["mtva-player", "mtva-player-live"],
+            vodClass: ["mtva-player", "mtva-player-vod"]
+        };
+        var currentSetup = clone_object(defaultSetup);
+"""
+"""
+https://player.mediaklikk.hu/playernew/player.php?video=mtv1live&noflash=yes&osfamily=OS X&osversion=10.14&browsername=Firefox&browserversion=66.0&title=M1&contentid=mtv1live&embedded=0
+        <script>jwplayer.key="G1TfeXueehbr/n/4/MCAEQq/kWlgDr1vbiAgbbRu5HCfpFmI";</script>
+<div id="player"></div>
+<script>
+    var pl = jwplayer('player');
+    var _contentId = null;
+
+    pl.setup( {
+    "autostart": "true",
+    "width": "100%",
+    "aspectratio": "16:9",
+    "primary": "html5",
+    "advertising": {
+        "client": "vast"
+    },
+    "cast": {},
+    "playlist": [
+        {
+            "file": "\/\/c201-node61-cdn.connectmedia.hu\/1100\/294ac424d9e378e1723d021c4889bbbe\/5cac0a95\/index.m3u8?v=5i",
+            "type": "hls"
+        }
+    ]
+} );
+
+"""
+"""
+https://www.mediaklikk.hu/cikk/2019/04/02/ide-kattintva-visszanezhetik-az-egynyari-kaland-elso-evadat/
+<p><strong>1. rész: Beköltözés</strong></p>
+<div class='hmsVideoPlayerWrapper'>
+<div class='hmsArticleViewerVideo'>
+<div id="player_81925_1" class="live-player-container"></div>
+<p><script defer type="text/javascript">
+				mtva_player_manager.player(document.getElementById("player_81925_1"), {"token":"U2FsdGVkX1%2B%2F635p7jQljbzG6a9v6vrE0mnSBqna0wIuavyQ73V5ah9DKXTf1LSFdevSodT%2B%2F9qmMQoXAHV5PqUXZ1xdf2OLKdbsAyNjIrn4KREoKvCOwPlKK1tn9sCXJPwH9YHi36O6qQ3zm3DQQKB7TownSWp7pp8RNX7KVFQ%3D","autostart":false,"debug":false,"bgImage":"\/\/mediaklikk.cms.mtv.hu\/wp-content\/uploads\/sites\/4\/2015\/04\/Egynyári-kaland-1.epizód-fotókredit-MTVA-Megafilm-Bara-Szilvia-6-e1554212213668-1024x576.jpg","adVastPreroll":"https:\/\/gemhu.adocean.pl\/ad.xml?id=VAAxe3zcXKSHojvBEJMZNkSV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria, 1. rész), Beköltözés ","series":"Egyéb","contentId":838544,"embedded":true});
+</script></div>
+"""
