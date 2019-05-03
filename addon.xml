@@ -2,6 +2,7 @@
 <addon id="plugin.video.DunaTV2" name="DunaTV2" version="0.0.5" provider-name="BiroDB">
 	<requires>
 		<import addon="xbmc.python" version="2.6.0"/>
+		<import addon="script.module.future" />
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="main.py">
 		<provides>video</provides>
