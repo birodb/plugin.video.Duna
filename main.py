@@ -9,6 +9,17 @@ Example video plugin that is compatible with both Python 2 and 3
 Compatibility features are provided by ``script.module.future`` library addon.
 """
 
+# Enable unicode strings by default as in Python 3
+from __future__ import unicode_literals
+# Monkey-patch standard libary names to enable Python 3-like behavior
+from future import standard_library
+standard_library.install_aliases()
+from future.utils import iterkeys
+# The above strings provide compatibility layer for Python 2
+# so the code can work in both versions.
+# In Python 3 they do nothing and can be safely removed.
+# Normal imports for your addon:
+
 import sys
 import json
 import re
@@ -22,17 +33,6 @@ import xbmc
 import xbmcaddon
 import xbmcplugin
 import xbmcgui
-
-# Enable unicode strings by default as in Python 3
-from __future__ import unicode_literals
-# Monkey-patch standard libary names to enable Python 3-like behavior
-from future import standard_library
-standard_library.install_aliases()
-from future.utils import iterkeys
-# The above strings provide compatibility layer for Python 2
-# so the code can work in both versions.
-# In Python 3 they do nothing and can be safely removed.
-# Normal imports for your addon:
 
 
 
@@ -49,7 +49,10 @@ try:
 except ImportError:
     from urllib2 import build_opener, HTTPCookieProcessor, Request
 
-from urllib.parse import urlencode, parse_qsl
+try:
+    from urllib.parse import urlencode, parse_qsl
+except ImportError:
+    from urllib2 import urlencode, parse_qsl
 
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
