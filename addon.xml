@@ -1,26 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<addon id="plugin.video.DunaTV2"
-version="2.4.1"
-name="DunaTV2"
-provider-name="birodb">
-<requires>
-  <import addon="xbmc.python" version="2.25.0"/>
-  <import addon="script.module.future" />
-</requires>
-<extension point="xbmc.python.pluginsource" library="main.py">
-  <provides>video</provides>
-</extension>
-<extension point="xbmc.addon.metadata">
-  <summary lang="en">DunaTV2</summary>
-  <description lang="en_GB">A mediaklikk video plugin for Kodi mediacenter.</description>
-  <disclaimer lang="en_GB">Free sample videos are provided by www.vidsplay.com.</disclaimer>
-  <assets>
-    <icon>icon.png</icon>
-    <fanart>fanart.jpg</fanart>
-    <screenshot>resources\screenshot-01.jpg</screenshot>
-    <screenshot>resources\screenshot-02.jpg</screenshot>
-    <screenshot>resources\screenshot-03.jpg</screenshot>    
-  </assets>
-  <news>Updated with latest artwork metadata</news>
-</extension>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.DunaTV2" name="DunaTV2" version="0.0.4" provider-name="BiroDB">
+	<requires>
+		<import addon="xbmc.python" version="2.6.0"/>
+	</requires>
+	<extension point="xbmc.python.pluginsource" library="main.py">
+		<provides>video</provides>
+  	</extension>
+	<extension point="xbmc.addon.metadata">
+		<summary>Duna TV2</summary>
+		<description>Stream Duna TV2 live.</description>
+		<platform>all</platform>
+	</extension>
 </addon>
