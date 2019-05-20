@@ -123,7 +123,7 @@ def get_stream_url(url):
     try:
         request = Request(url)
         response = opener.open(request)
-        p.feed(response.read())
+        p.feed(response.read().decode('utf-8'))
         response.close()
         d = p.player_data[0]
         token_id = d.get('streamId')
@@ -134,7 +134,7 @@ def get_stream_url(url):
         #print(url)
         request = Request(url)
         response = opener.open(request)
-        p.feed(response.read())
+        p.feed(response.read().decode('utf-8'))
         response.close()
     except RuntimeError as e:
         print(e)
