@@ -172,6 +172,14 @@ def list_categories():
     # Add a sort method for the virtual folder items (alphabetically, ignore articles)
     # xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
     # Finish creating a virtual folder.
+
+    list_item = xbmcgui.ListItem(label='Search')
+    list_item.setInfo('video', {'title': 'Search'})
+    # Create a URL for a plugin recursive call.
+    # is_folder = False means that this item won't open any sub-list.
+    is_folder = True 
+    # Add our item to the Kodi virtual folder listing.
+    xbmcplugin.addDirectoryItem(_handle, get_url(action='search'), list_item, is_folder)
     xbmcplugin.endOfDirectory(_handle)
 
 
@@ -232,6 +240,39 @@ def play_video(path):
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
+def search_items():
+    kb = xbmc.Keyboard()
+    kb.doModal()
+    if kb.isConfirmed():
+        p={'action': 'search', 's_type': 'all', 'keyword':  kb.getText()}
+        url='https://www.mediaklikk.hu/wp-content/plugins/hms-mediaklikk/interfaces//get_results.php?{}'.format(urlencode(p))
+        cj = CookieJar()
+        opener = build_opener(HTTPCookieProcessor(cj))
+        #opener.addheaders = {'User-agent':'Custom user agent'}
+        #opener.version = cs_agent
+        r = {}
+        try:
+            request = Request(url)
+            response = opener.open(request)
+            r = json.loads(response.read().decode('utf-8'))
+            response.close()
+        except RuntimeError as e:
+            dlg = xbmcgui.Dialog()
+            dlg.ok('Error', str(e))
+            print(e)
+        # is_folder = False means that this item won't open any sub-list.
+        is_folder = False 
+        for i in r.get('items', []):
+            src = i.get('source', {})
+            if 'URL' in src and 'title' in src:
+                list_item = xbmcgui.ListItem(label=src['title'])
+                list_item.setInfo('video', {'title': src['title']})
+                list_item.setProperty('IsPlayable', 'true')
+                # Create a URL for a plugin recursive call.
+                # Add our item to the Kodi virtual folder listing.
+                xbmcplugin.addDirectoryItem(_handle, get_url(action='play', video='https:' + src['URL']), list_item, is_folder)
+        xbmcplugin.endOfDirectory(_handle)
+    pass
 
 def router(paramstring):
     """
@@ -252,6 +293,10 @@ def router(paramstring):
         elif params['action'] == 'play':
             # Play a video from a provided URL.
             play_video(get_stream_url(params['video']))
+        elif params['action'] == 'search':
+            # Play a video from a provided URL.
+            #play_video(get_stream_url(params['video']))
+            search_items()
         else:
             # If the provided paramstring does not contain a supported action
             # we raise an exception. This helps to catch coding errors,
