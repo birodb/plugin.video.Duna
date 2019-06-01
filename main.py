@@ -142,7 +142,7 @@ def get_stream_url(url):
 
 CHANNELS = [
         {'name': 'DunaTV', 'id': 'dunalive', 'id2': 'duna-elo', 'num': '3'},
-        {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'dunaworld-elo', 'num': '4'},
+        {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'duna-world-elo', 'num': '4'},
         {'name': 'MTV1', 'id': 'mtv1live', 'id2': 'm1-elo', 'num': '1'},
         {'name': 'MTV2', 'id': 'mtv2live', 'id2': 'm2-elo', 'num': '2'},
         {'name': 'MTV4', 'id': 'mtv4live', 'id2': 'm4-elo', 'num': '30'},
