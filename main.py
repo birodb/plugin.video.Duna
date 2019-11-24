@@ -136,8 +136,10 @@ def get_stream_url(url):
         response = opener.open(request)
         p.feed(response.read().decode('utf-8'))
         response.close()
-    except RuntimeError as e:
-        print(e)
+    except (OSError, IOError, RuntimeError) as e:
+        dlg = xbmcgui.Dialog()
+        dlg.ok('Error', str(e))
+        raise e
     return p.stream_url
 
 CHANNELS = [
@@ -228,7 +230,7 @@ def list_videos(category):
     xbmcplugin.endOfDirectory(_handle)
 
 
-def play_video(path):
+def play_video(path, video_info):
     """
     Play a video by the provided path.
 
@@ -237,6 +239,7 @@ def play_video(path):
     """
     # Create a playable item with a path to play.
     play_item = xbmcgui.ListItem(path=path)
+    play_item.setInfo('video', video_info) 
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
@@ -244,29 +247,82 @@ def search_items():
     kb = xbmc.Keyboard()
     kb.doModal()
     if kb.isConfirmed():
-        p={'action': 'search', 's_type': 'all', 'keyword':  kb.getText()}
+        '''Host: mediaklikk.hu
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:70.0) Gecko/20100101 Firefox/70.0
+Accept: application/json, text/javascript, */*; q=0.01
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+X-Requested-With: XMLHttpRequest
+Content-Length: 132
+Origin: https://mediaklikk.hu
+DNT: 1
+Connection: keep-alive
+Referer: https://mediaklikk.hu/talalati-lista
+Cookie: __gfp_64b=xxxx.m7; _ga=GA1.; SERVERID=mtvacookieA
+Pragma: no-cache
+Cache-Control: no-cache
+
+action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&skippedPageElements=undefined&pageSize=5&pageNumber=1
+'''
+
+        p = {
+            'action': 'search',
+            #'s_type': 'all',
+            's_type': 'video',
+            'keyword':  kb.getText(),
+            'fromDate': '2013-01-01',
+            'toDate': str( datetime.date.today() ),
+            'skippedPageElements': 'undefined',
+            'pageSize': 95,
+            'pageNumber': 1
+        }
         url='https://www.mediaklikk.hu/wp-content/plugins/hms-mediaklikk/interfaces//get_results.php?{}'.format(urlencode(p))
         cj = CookieJar()
         opener = build_opener(HTTPCookieProcessor(cj))
         #opener.addheaders = {'User-agent':'Custom user agent'}
         #opener.version = cs_agent
-        r = {}
+        resp = '[]'
         try:
-            request = Request(url)
+            request = Request(url)#, urlencode(p))
             response = opener.open(request)
-            r = json.loads(response.read().decode('utf-8'))
+            resp = response.read().decode('utf-8')
             response.close()
-        except RuntimeError as e:
+        except (OSError, IOError, RuntimeError) as e:
             dlg = xbmcgui.Dialog()
             dlg.ok('Error', str(e))
-            print(e)
+            raise e
+        try:
+            r = json.loads(resp)
+        except ValueError as e:
+            dlg = xbmcgui.Dialog()
+            dlg.ok('Error', str(e))
+            raise e
         # is_folder = False means that this item won't open any sub-list.
         is_folder = False 
-        for i in r.get('items', []):
+        if isinstance(r, list) and len(r) == 1:
+            r = r[0]
+        else:
+            raise RuntimeError(url +'\n'+resp)
+        if isinstance(r, dict) and 'data' in r:
+            r = r['data']
+        else:
+            raise RuntimeError(url +'\n'+resp)
+        if isinstance(r, dict) and 'items' in r:
+            r = r['items']
+        else:
+            raise RuntimeError(url +'\n'+resp)
+        if isinstance(r, list):# and len(r) == 1:
+            #r = r[0]
+            pass
+        else:
+            raise RuntimeError(url +'\n'+resp)
+        for i in r:
             src = i.get('source', {})
-            if 'URL' in src and 'title' in src:
-                list_item = xbmcgui.ListItem(label=src['title'])
-                list_item.setInfo('video', {'title': src['title']})
+            title = i.get('post_title','')
+            if 'URL' in src:
+                list_item = xbmcgui.ListItem(label=title)
+                list_item.setInfo('video', {'title': title})
                 list_item.setProperty('IsPlayable', 'true')
                 # Create a URL for a plugin recursive call.
                 # Add our item to the Kodi virtual folder listing.
@@ -292,7 +348,7 @@ def router(paramstring):
             list_videos(params['category'])
         elif params['action'] == 'play':
             # Play a video from a provided URL.
-            play_video(get_stream_url(params['video']))
+            play_video(get_stream_url(params['video']), params.get('video_info', {}))
         elif params['action'] == 'search':
             # Play a video from a provided URL.
             #play_video(get_stream_url(params['video']))
@@ -378,13 +434,14 @@ def add_live_tv(c):
         # For available properties see the following link:
         # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
         # 'mediatype' is needed for a skin to display info for this ListItem correctly.
-        list_item.setInfo('video', {'title': name, 'duration': play_dt.seconds, 'plot': description, 'mediatype': 'video'})
+        video_info = {'title': name, 'duration': play_dt.seconds, 'plot': description, 'mediatype': 'video'}
+        list_item.setInfo('video', video_info) 
         # Create a URL for a plugin recursive call.
         # Example: plugin://plugin.video.example/?action=listing&category=Animals
         list_item.setProperty('IsPlayable', 'true')
         # Create a URL for a plugin recursive call.
         # Example: plugin://plugin.video.example/?action=play&video=https://www.vidsplay.com/wp-content/uploads/2017/04/crab.mp4
-        url = get_url(action='play', video='https://www.mediaklikk.hu/{}/'.format(c['id2']))
+        url = get_url(action='play', video='https://www.mediaklikk.hu/{}/'.format(c['id2']), video_info=video_info)
         # Add the list item to a virtual Kodi folder.
         # is_folder = False means that this item won't open any sub-list.
         is_folder = False
