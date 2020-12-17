@@ -36,28 +36,13 @@ import xbmcgui
 
 
 
-try:
-    from html.parser import HTMLParser
-except ImportError:
-    from html.parser import HTMLParser
-try:
-    from http.cookiejar import CookieJar
-except ImportError:
-    from http.cookiejar import CookieJar
-try:
-    from urllib.request import build_opener, HTTPCookieProcessor, Request
-except ImportError:
-    from urllib.request import build_opener, HTTPCookieProcessor, Request
+from html.parser import HTMLParser
+from http.cookiejar import CookieJar
+from urllib.request import build_opener, HTTPCookieProcessor, Request
 
-try:
-    from urllib.parse import urlencode
-except ImportError:
-    from urllib.parse import urlencode
+from urllib.parse import urlencode
 
-try:
-    from urllib.parse import parse_qsl
-except ImportError:
-    from urllib.parse import parse_qsl
+from urllib.parse import parse_qsl
 
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
@@ -404,15 +389,15 @@ def add_live_tv(c):
         title_xml = item.find('SeriesTitle')
         if title_xml is None or title_xml.text is None:
             title_xml = item.find('Title')
-        title = str(title_xml.text.encode('utf-8'))
+        title = str(title_xml.text)
         descr_xml = item.find('Description')
         description = None
         if descr_xml is not None and descr_xml.text is not None:
-            description = str(descr_xml.text.encode('utf-8'))
+            description = str(descr_xml.text)
         #title += '.'
         #for child in item:
         #    if child.text:
-        #        s +=  child.tag + ': ' + str(child.text.encode('utf-8')) +'; '
+        #        s +=  child.tag + ': ' + str(child.text) +'; '
         #xbmcgui.Dialog().ok(cs_name, s, json.dumps(sys.argv), str(today))
         play_min, play_sec = divmod(play_dt.seconds, 60)
         if play_min:
