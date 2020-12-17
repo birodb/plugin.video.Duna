@@ -25,7 +25,7 @@ import json
 import re
 import os
 import time
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import datetime
 import xml.etree.ElementTree as ET
 
@@ -39,25 +39,25 @@ import xbmcgui
 try:
     from html.parser import HTMLParser
 except ImportError:
-    from HTMLParser import HTMLParser
+    from html.parser import HTMLParser
 try:
     from http.cookiejar import CookieJar
 except ImportError:
-    from cookielib import CookieJar
+    from http.cookiejar import CookieJar
 try:
     from urllib.request import build_opener, HTTPCookieProcessor, Request
 except ImportError:
-    from urllib2 import build_opener, HTTPCookieProcessor, Request
+    from urllib.request import build_opener, HTTPCookieProcessor, Request
 
 try:
     from urllib.parse import urlencode
 except ImportError:
-    from urllib import urlencode
+    from urllib.parse import urlencode
 
 try:
     from urllib.parse import parse_qsl
 except ImportError:
-    from urlparse import parse_qsl
+    from urllib.parse import parse_qsl
 
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
@@ -368,14 +368,14 @@ cs_name = xbmcaddon.Addon().getAddonInfo("id")
 cs_file = os.path.join(xbmc.translatePath("special://temp"), cs_name + ".session")
 cs_delay = 5
 
-class CsatornakURLopener(urllib.FancyURLopener):
+class CsatornakURLopener(urllib.request.FancyURLopener):
     version = cs_agent
 
-urllib._urlopener = CsatornakURLopener()
+urllib.request._urlopener = CsatornakURLopener()
 def load_page(pg_url):
     # load and parse stream
     # print("Loading: " + pg_url)
-    page = urllib.urlopen(pg_url)
+    page = urllib.request.urlopen(pg_url)
     page_content = page.read()
     page.close()
     return page_content
