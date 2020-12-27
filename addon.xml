@@ -11,5 +11,8 @@
 		<summary>Duna TV2</summary>
 		<description>Stream Duna TV2 live.</description>
 		<platform>all</platform>
+		<assets>
+		    <icon>icon.png</icon>
+		</assets>	
 	</extension>
 </addon>
