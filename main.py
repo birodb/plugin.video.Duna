@@ -382,7 +382,6 @@ def add_live_tv(c):
         prg_content = load_page(prg_url).decode("utf-8")
         profile_path.mkdir(parents=True, exist_ok=True)
         with local_prg_fname.open('wt', 'utf-8') as f:
-            f.write(prg_url)
             f.write(prg_content)
     root = ET.fromstring(prg_content)
     cnt = 0
