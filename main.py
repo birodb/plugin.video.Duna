@@ -126,13 +126,14 @@ def get_stream_url(url):
         dlg.ok('Error', str(e))
         raise e
     return p.stream_url
-
+#[1,2,30,34,33,3,4]
 CHANNELS = [
         {'name': 'DunaTV', 'id': 'dunalive', 'id2': 'duna-elo', 'num': '3'},
         {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'duna-world-elo', 'num': '4'},
         {'name': 'MTV1', 'id': 'mtv1live', 'id2': 'm1-elo', 'num': '1'},
         {'name': 'MTV2', 'id': 'mtv2live', 'id2': 'm2-elo', 'num': '2'},
         {'name': 'MTV4', 'id': 'mtv4live', 'id2': 'm4-elo', 'num': '30'},
+        {'name': 'MTV4+', 'id': 'mtv4live', 'id2': 'm4-sport-plusz-elo', 'num': '34'},
         {'name': 'MTV5', 'id': 'mtv5live', 'id2': 'm5-elo', 'num': '33'}
         ]
 
