@@ -394,7 +394,7 @@ def add_live_tv(c):
         play_dt = None
         if length_xml is not None and length_xml.text is not None:
             t = datetime.strptime(length_xml.text, '%H:%M:%S')
-            play_dt = timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
+            play_dt = timedelta(hours=t.hour, minutes=t.min, seconds=t.sec)
         #if start_date > now:
         #    continue
         if now - start_date > play_dt:
