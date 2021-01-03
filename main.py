@@ -379,6 +379,7 @@ def add_live_tv(c):
     else: #if not prg_content:
         prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
         prg_content = load_page(prg_url)
+        profile_path.mkdir(parents=True, exist_ok=True)
         with local_prg_fname.open('wt') as f:
             f.write(prg_content)
     root = ET.fromstring(prg_content)
