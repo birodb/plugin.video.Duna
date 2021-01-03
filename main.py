@@ -313,8 +313,8 @@ action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&s
                 # Add our item to the Kodi virtual folder listing.
                 xbmcplugin.addDirectoryItem(_handle, get_url(action='play', video='https:' + src['URL']), list_item, is_folder)
         xbmcplugin.endOfDirectory(_handle)
-    pass
 
+	
 def router(paramstring):
     """
     Router function that calls other functions
