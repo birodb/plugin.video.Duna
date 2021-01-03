@@ -38,6 +38,7 @@ from pathlib import Path
 from datetime import date, time, datetime, timedelta
 
 import xbmc
+import xbmcvfs
 import xbmcaddon
 import xbmcplugin
 import xbmcgui
@@ -352,7 +353,7 @@ def router(paramstring):
 this_addon = xbmcaddon.Addon()
 cs_name = this_addon.getAddonInfo("id")
 cs_profile = this_addon.getAddonInfo("profile")
-cs_file = os.path.join(xbmc.translatePath("special://temp"), cs_name + ".session")
+cs_file = os.path.join(xbmcvfs.translatePath("special://temp"), cs_name + ".session")
 cs_delay = 5
 
 class CsatornakURLopener(urllib.request.FancyURLopener):
@@ -371,7 +372,7 @@ def add_live_tv(c):
     today = date.today()
     now = datetime.now()
     prg_content = None
-    profile_path = Path(xbmc.translatePath( cs_profile ))
+    profile_path = Path(xbmcvfs.translatePath( cs_profile ))
     local_prg_fname = profile_path / 'broadcast_{0}.xml'.format(c['num'])
     if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.stat().st_mtime) == today:
         with local_prg_fname.open('rt') as f:
