@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Module: default
-# Author: Biro D.B.
+# Author: B.D.B.
 # Credit: romanvm - author of original video plugin sample
 # Created on: 28.04.2019
 # License: GPL v.3 https://www.gnu.org/copyleft/gpl.html
@@ -28,6 +28,9 @@ import time
 import urllib.request, urllib.parse, urllib.error
 import datetime
 import xml.etree.ElementTree as ET
+
+from pathlib import Path
+from datetime import date, datetime, timedelta
 
 import xbmc
 import xbmcaddon
@@ -258,7 +261,7 @@ action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&s
             's_type': 'video',
             'keyword':  kb.getText(),
             'fromDate': '2013-01-01',
-            'toDate': str( datetime.date.today() ),
+            'toDate': str( date.today() ),
             'skippedPageElements': 'undefined',
             'pageSize': 95,
             'pageNumber': 1
@@ -350,7 +353,9 @@ def router(paramstring):
         list_categories()
 
 # setup
-cs_name = xbmcaddon.Addon().getAddonInfo("id")
+this_addon = xbmcaddon.Addon()
+cs_name = this_addon.getAddonInfo("id")
+cs_profile = this_addon.getAddonInfo("profile")
 cs_file = os.path.join(xbmc.translatePath("special://temp"), cs_name + ".session")
 cs_delay = 5
 
@@ -367,22 +372,31 @@ def load_page(pg_url):
     return page_content
 
 def add_live_tv(c):
-    today = datetime.date.today()
-    now = datetime.datetime.now()
-    prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
-    prg_content = load_page(prg_url)
+    today = date.today()
+    now = datetime.now()
+    prg_content = None
+    profile_path = Path(xbmc.translatePath( cs_profile ).decode("utf-8"))
+    local_prg_fname = profile_path / 'broadcast_{0}.xml'.format(c['num'])
+    if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.fstat().st_mtime) == today:
+        with local_prg_fname.open('rt') as f:
+            prg_content = f.read()
+    else: #if not prg_content:
+        prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
+        prg_content = load_page(prg_url)
+        with local_prg_fname.open('wt') as f:
+            f.write(prg_content)
     root = ET.fromstring(prg_content)
     cnt = 0
     for item in root.iter('Item'):
         start_date = None
         date_xml = item.find('Date')
         if date_xml is not None and date_xml.text is not None:
-            start_date = datetime.datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
+            start_date = datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
         length_xml = item.find('Length')
         play_dt = None
         if length_xml is not None and length_xml.text is not None:
             t = time.strptime(length_xml.text, '%H:%M:%S')
-            play_dt = datetime.timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
+            play_dt = timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
         #if start_date > now:
         #    continue
         if now - start_date > play_dt:
