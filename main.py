@@ -35,7 +35,7 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
-from datetime import date, datetime, timedelta
+from datetime import date, time, datetime, timedelta
 
 import xbmc
 import xbmcaddon
