@@ -5,8 +5,7 @@
 # Created on: 28.04.2019
 # License: GPL v.3 https://www.gnu.org/copyleft/gpl.html
 """
-Example video plugin that is compatible with both Python 2 and 3
-Compatibility features are provided by ``script.module.future`` library addon.
+Example video plugin for online streams
 """
 
 # Enable unicode strings by default as in Python 3
@@ -24,10 +23,16 @@ import sys
 import json
 import re
 import os
-import time
-import urllib.request, urllib.parse, urllib.error
-import datetime
 import xml.etree.ElementTree as ET
+
+from html.parser import HTMLParser
+from http.cookiejar import CookieJar
+
+import urllib.request
+import urllib.parse
+import urllib.error
+from urllib.request import build_opener, HTTPCookieProcessor, Request
+from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
 from datetime import date, datetime, timedelta
@@ -37,15 +42,6 @@ import xbmcaddon
 import xbmcplugin
 import xbmcgui
 
-
-
-from html.parser import HTMLParser
-from http.cookiejar import CookieJar
-from urllib.request import build_opener, HTTPCookieProcessor, Request
-
-from urllib.parse import urlencode
-
-from urllib.parse import parse_qsl
 
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
@@ -168,7 +164,7 @@ def list_categories():
     list_item.setInfo('video', {'title': 'Search'})
     # Create a URL for a plugin recursive call.
     # is_folder = False means that this item won't open any sub-list.
-    is_folder = True 
+    is_folder = True
     # Add our item to the Kodi virtual folder listing.
     xbmcplugin.addDirectoryItem(_handle, get_url(action='search'), list_item, is_folder)
     xbmcplugin.endOfDirectory(_handle)
@@ -228,7 +224,7 @@ def play_video(path, video_info):
     """
     # Create a playable item with a path to play.
     play_item = xbmcgui.ListItem(path=path)
-    play_item.setInfo('video', video_info) 
+    play_item.setInfo('video', video_info)
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
@@ -288,7 +284,7 @@ action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&s
             dlg.ok('Error', str(e))
             raise e
         # is_folder = False means that this item won't open any sub-list.
-        is_folder = False 
+        is_folder = False
         if isinstance(r, list) and len(r) == 1:
             r = r[0]
         else:
@@ -435,7 +431,7 @@ def add_live_tv(c):
         # https://codedocs.xyz/xbmc/xbmc/group__python__xbmcgui__listitem.html#ga0b71166869bda87ad744942888fb5f14
         # 'mediatype' is needed for a skin to display info for this ListItem correctly.
         video_info = {'title': name, 'duration': play_dt.seconds, 'plot': description, 'mediatype': 'video'}
-        list_item.setInfo('video', video_info) 
+        list_item.setInfo('video', video_info)
         # Create a URL for a plugin recursive call.
         # Example: plugin://plugin.video.example/?action=listing&category=Animals
         list_item.setProperty('IsPlayable', 'true')
