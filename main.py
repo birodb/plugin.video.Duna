@@ -375,15 +375,15 @@ def add_live_tv(c):
     profile_path = Path(xbmcvfs.translatePath( cs_profile ))
     local_prg_fname = profile_path / 'broadcast_{0}.xml'.format(c['num'])
     if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.stat().st_mtime) == today:
-        with local_prg_fname.open('rt', 'utf-8') as f:
+        with local_prg_fname.open('rb') as f:
             prg_content = f.read()
     else: #if not prg_content:
         prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
-        prg_content = load_page(prg_url).decode("utf-8")
+        prg_content = load_page(prg_url)
         profile_path.mkdir(parents=True, exist_ok=True)
-        with local_prg_fname.open('wt', 'utf-8') as f:
+        with local_prg_fname.open('wb') as f:
             f.write(prg_content)
-    root = ET.fromstring(prg_content)
+    root = ET.fromstring(prg_content.decode("utf-8"))
     cnt = 0
     for item in root.iter('Item'):
         start_date = None
