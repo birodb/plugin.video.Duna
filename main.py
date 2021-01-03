@@ -517,8 +517,8 @@ if __name__ == '__main__':
     # Call the router function and pass the plugin call parameters to it.
     # We use string slicing to trim the leading '?' from the plugin call paramstring
     router(sys.argv[2][1:])
-    #print "Session: " + cs_file
 
+    #print "Session: " + cs_file
     # tries to limit deadlocks due to multiple runs
     # fcntl for file locking may not be available on some platforms
     #if os.path.exists(cs_file) and time.time() - os.path.getmtime(cs_file) < cs_delay:
@@ -527,9 +527,7 @@ if __name__ == '__main__':
     #else:
     #	with open(cs_file, "a+"):
     #	os.utime(cs_file, None)
-
     #cs_player = xbmc.Player()
-
     # stop playing and wait
     #cs_player.stop()
     #while cs_player.isPlaying():
