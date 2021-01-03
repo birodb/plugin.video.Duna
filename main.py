@@ -35,7 +35,7 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
-from datetime import date, time, datetime, timedelta, strptime
+from datetime import date, time, datetime, timedelta
 
 import xbmc
 import xbmcvfs
@@ -389,11 +389,11 @@ def add_live_tv(c):
         start_date = None
         date_xml = item.find('Date')
         if date_xml is not None and date_xml.text is not None:
-            start_date = strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
+            start_date = datetime.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
         length_xml = item.find('Length')
         play_dt = None
         if length_xml is not None and length_xml.text is not None:
-            t = strptime(length_xml.text, '%H:%M:%S')
+            t = datetime.strptime(length_xml.text, '%H:%M:%S')
             play_dt = timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
         #if start_date > now:
         #    continue
