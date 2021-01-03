@@ -389,7 +389,7 @@ def add_live_tv(c):
         start_date = None
         date_xml = item.find('Date')
         if date_xml is not None and date_xml.text is not None:
-            start_date = datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
+            start_date = datetime((time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
         length_xml = item.find('Length')
         play_dt = None
         if length_xml is not None and length_xml.text is not None:
