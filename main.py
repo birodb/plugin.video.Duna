@@ -371,7 +371,7 @@ def add_live_tv(c):
     today = date.today()
     now = datetime.now()
     prg_content = None
-    profile_path = Path(xbmc.translatePath( cs_profile ).decode("utf-8"))
+    profile_path = Path(xbmc.translatePath( cs_profile ))
     local_prg_fname = profile_path / 'broadcast_{0}.xml'.format(c['num'])
     if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.fstat().st_mtime) == today:
         with local_prg_fname.open('rt') as f:
