@@ -387,6 +387,7 @@ def add_live_tv(c):
             #dlg.ok('Error', str(e)+ '\n' + prg_url)
             #raise e
             #return None
+            pass
         profile_path.mkdir(parents=True, exist_ok=True)
         with local_prg_fname.open('wb') as f:
             if prg_content:
