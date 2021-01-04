@@ -16,11 +16,11 @@ import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from http.cookiejar import CookieJar
 
-from urllib.request import build_opener, HTTPCookieProcessor, urlopen, Request
+from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
-from datetime import date, time, datetime, timedelta
+from datetime import date, datetime, timedelta
 
 import xbmc
 import xbmcvfs
@@ -46,10 +46,8 @@ CHANNELS = [
         {'name': 'M5', 'id': 'mtv5live', 'id2': 'm5-elo', 'num': '33'}
         ]
 
-    
-# Get the plugin handle as an integer number.
-
 class MyHTMLParser(HTMLParser):
+    """scrape the program and web player pages"""
     def __init__(self, *args, **kwargs):
         HTMLParser.__init__(self, *args, **kwargs)
         self.curr_tag = None
@@ -88,7 +86,6 @@ class MyHTMLParser(HTMLParser):
 
 
 #liz = xbmcgui.ListItem(' '.join((cs_name, json.dumps(sys.argv), str(date.today())))))#'XBMC list Example Title')
-
 # play stream
 #xbmcgui.Dialog().ok(cs_name, json.dumps(sys.argv), str(date.today()))
 #for i in CHANNELS:
@@ -114,7 +111,7 @@ class MyHTMLParser(HTMLParser):
 #       var currentSetup = clone_object(defaultSetup);
 #""
 #""
-#ttps://player.mediaklikk.hu/playernew/player.php?video=mtv1live&noflash=yes&osfamily=OS X&osversion=10.14&browsername=Firefox&browserversion=66.0&title=M1&contentid=mtv1live&embedded=0
+#https://player.mediaklikk.hu/playernew/player.php?video=mtv1live&noflash=yes&osfamily=OS X&osversion=10.14&browsername=Firefox&browserversion=66.0&title=M1&contentid=mtv1live&embedded=0
 #       <script>jwplayer.key="G1TfeXueehbr/n/4/MCAEQq/kWlgDr1vbiAgbbRu5HCfpFmI";</script>
 #div id="player"></div>
 #script>
@@ -148,8 +145,9 @@ class MyHTMLParser(HTMLParser):
 #</script></div>
 #"""
 
-        
+
 class PluginDunaTV:
+    """the scraper and xbmc list provider video plugin"""
     def __init__(self, argv):
         self.base_url = argv[0]
         self.addon = xbmcaddon.Addon(self.base_url.split('/')[-2])
@@ -160,8 +158,8 @@ class PluginDunaTV:
         # Parse a URL-encoded paramstring to the dictionary of
         # {<parameter>: <value>} elements
         self.params = dict(parse_qsl(paramstr))
-        cj = CookieJar()
-        self.opener = build_opener(HTTPCookieProcessor(cj))
+        self.cj = CookieJar()
+        self.opener = build_opener(HTTPCookieProcessor(self.cj))
 
 
     def build_url(self, **kwargs):
@@ -173,19 +171,22 @@ class PluginDunaTV:
         :rtype: str
         """
         return '{0}?{1}'.format(self.base_url, urlencode(kwargs))
-    
+
 
     @staticmethod
     def read_response_decoded(response):
-        return response.read().decode(response.headers.get_content_charset(failobj='utf-8'))
-    
+        buff = response.read()
+        encoding = response.headers.get_content_charset(failobj='utf-8')
+        return buff.decode(encoding)
+
 
     def load_page_decoded(self, url):
         """load page data"""
         request = Request(url, headers=REQ_HEADERS)
         with self.opener.open(request) as response:
-            return read_response_decoded(response)
-    
+            return PluginDunaTV.read_response_decoded(response)
+
+
     def route(self):
         """
         Router function that calls other functions
@@ -294,20 +295,20 @@ class PluginDunaTV:
             if isinstance(r, list) and len(r) == 1:
                 r = r[0]
             else:
-                raise RuntimeError(url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+resp)
             if isinstance(r, dict) and 'data' in r:
                 r = r['data']
             else:
-                raise RuntimeError(url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+resp)
             if isinstance(r, dict) and 'items' in r:
                 r = r['items']
             else:
-                raise RuntimeError(url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+resp)
             if isinstance(r, list):# and len(r) == 1:
                 #r = r[0]
                 pass
             else:
-                raise RuntimeError(url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+resp)
             for i in r:
                 src = i.get('source', {})
                 title = i.get('post_title','')
@@ -319,7 +320,7 @@ class PluginDunaTV:
                     # Add our item to the Kodi virtual folder listing.
                     xbmcplugin.addDirectoryItem(self.handle, self.build_url(action='play', video='https:' + src['URL']), list_item, is_folder)
             xbmcplugin.endOfDirectory(self.handle)
-    
+
     # In a "real life" plugin you will need to get info and links to video files/streams
     # from some web-site or online service.
     def action_initial_fill(self):
