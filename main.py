@@ -384,7 +384,7 @@ def add_live_tv(c):
             prg_content = load_page(prg_url)
         except (OSError, IOError, RuntimeError) as e:
             dlg = xbmcgui.Dialog()
-            dlg.ok('Error', str(e))
+            dlg.ok('Error', str(e)+ '\n' + prg_url)
             #raise e
             return None
         profile_path.mkdir(parents=True, exist_ok=True)
