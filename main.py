@@ -152,7 +152,7 @@ class MyHTMLParser(HTMLParser):
 class PluginDunaTV:
     def __init__(self, argv):
         self.base_url = argv[0]
-        self.addon = xbmcaddon.Addon(self.base_url.split('.')[-2])
+        self.addon = xbmcaddon.Addon(self.base_url.split('/')[-2])
         self.profile_path = Path( xbmcvfs.translatePath(self.addon.getAddonInfo("profile")))
         self.handle = int(argv[1])
         # We use string slicing to trim the leading '?' from the plugin call paramstring
