@@ -20,7 +20,7 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 
 import xbmc
 import xbmcvfs
@@ -391,11 +391,12 @@ class PluginDunaTV:
             date_xml = item_xml.find('Date')
             if date_xml is not None and date_xml.text is not None:
                 xbmc.log(date_xml.text, level=xbmc.LOGINFO)
-                start_date = datetime.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
+                xbmc.log(datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6])), level=xbmc.LOGINFO)
+                start_date = datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
             play_dt = None
             length_xml = item_xml.find('Length')
             if length_xml is not None and length_xml.text is not None:
-                t = datetime.strptime(length_xml.text, '%H:%M:%S')
+                t = time.strptime(length_xml.text, '%H:%M:%S')
                 play_dt = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
             if not start_date or not play_dt or now - start_date > play_dt:
                 continue
