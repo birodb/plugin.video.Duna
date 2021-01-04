@@ -7,6 +7,12 @@
 """
 Example video plugin for online streams
 """
+import xbmc
+import xbmcvfs
+import xbmcaddon
+import xbmcplugin
+import xbmcgui
+
 
 import sys
 import json
@@ -20,13 +26,8 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
-from datetime import date, datetime, timedelta, time
-
-import xbmc
-import xbmcvfs
-import xbmcaddon
-import xbmcplugin
-import xbmcgui
+from datetime import date, datetime, timedelta
+import time
 
 
 CS_AGENT = ' '.join(["Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X)",
@@ -141,14 +142,14 @@ class MyHTMLParser(HTMLParser):
 #div class='hmsArticleViewerVideo'>
 #div id="player_81925_1" class="live-player-container"></div>
 #<p><script defer type="text/javascript">
-#				mtva_player_manager.player(document.getElementById("player_81925_1"), 
+#				mtva_player_manager.player(document.getElementById("player_81925_1"),
 #      {"token":"U2FsdGVkX1%2B%2F635p7jQljbzG6a9v6vrE0mnSBqna0wIuavyQ73V5ah9DKXTf1LSFdevSodT
 #       %2B%2F9qmMQoXAHV5PqUXZ1xdf2OLKdbsAyNjIrn4KREoKvCOwPlKK1tn9sCXJPwH9YHi36O6qQ3zm3DQQKB7Town
 #       SWp7pp8RNX7KVFQ%3D","autostart":false,"debug":false,"bgImage":
 #       "\/\/mediaklikk.cms.mtv.hu\/wp-content\/uploads\/sites\/4\/2015\/04\/Egynyári-kaland-1
 #       .epizód-fotókredit-MTVA-Megafilm-Bara-Szilvia-6-e1554212213668-1024x576.jpg",
 #       "adVastPreroll":"https:\/\/gemhu.adocean.pl\/ad.xml?id=VAAxe3zcXKSHojvBEJMZNk
-#       SV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria, 
+#       SV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria,
 #       1. rész), Beköltözés ","series":"Egyéb","contentId":838544,"embedded":true});
 #</script></div>
 #"""
