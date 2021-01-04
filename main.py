@@ -8,17 +8,6 @@
 Example video plugin for online streams
 """
 
-# Enable unicode strings by default as in Python 3
-#from __future__ import unicode_literals
-# Monkey-patch standard libary names to enable Python 3-like behavior
-#from future import standard_library
-#standard_library.install_aliases()
-#from future.utils import iterkeys
-# The above strings provide compatibility layer for Python 2
-# so the code can work in both versions.
-# In Python 3 they do nothing and can be safely removed.
-# Normal imports for your addon:
-
 import sys
 import json
 import re
@@ -28,10 +17,7 @@ import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from http.cookiejar import CookieJar
 
-import urllib.request
-import urllib.parse
-import urllib.error
-from urllib.request import build_opener, HTTPCookieProcessor, Request
+from urllib.request import build_opener, HTTPCookieProcessor, urlopen, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
@@ -44,14 +30,45 @@ import xbmcplugin
 import xbmcgui
 
 
+CS_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25"
+REQ_HEADERS = {'User-Agent': CS_AGENT}
+
+#[1,2,30,34,33,3,4]
+CHANNELS = [
+        {'name': 'Duna', 'id': 'dunalive', 'id2': 'duna-elo', 'num': '3'},
+        {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'duna-world-elo', 'num': '4'},
+        {'name': 'M1', 'id': 'mtv1live', 'id2': 'm1-elo', 'num': '1'},
+        {'name': 'M2', 'id': 'mtv2live', 'id2': 'm2-elo', 'num': '2'},
+        {'name': 'M4', 'id': 'mtv4live', 'id2': 'm4-elo', 'num': '30'},
+        {'name': 'M4+', 'id': 'mtv4live', 'id2': 'm4-sport-plusz-elo', 'num': '34'},
+        {'name': 'M5', 'id': 'mtv5live', 'id2': 'm5-elo', 'num': '33'}
+        ]
+
+
+def mk_request(url):
+    return Request(url, headers=REQ_HEADERS)
+
+def read_response_text(response):
+    return response.read().decode(response.headers.get_content_charset(failobj='utf-8'))
+
+def load_page(pg_url):
+    """load page data"""
+    with urlopen(mk_request(pg_url)) as response:
+        return read_response_text(response)
+
 # Get the plugin url in plugin:// notation.
 _url = sys.argv[0]
 # Get the plugin handle as an integer number.
 _handle = int(sys.argv[1])
+# setup
+this_addon = xbmcaddon.Addon()
+#cs_name = this_addon.getAddonInfo("id")
+PROFILE_PATH = Path(xbmcvfs.translatePath( this_addon.getAddonInfo("profile") ))
 
-cs_agent = "Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10B329 Safari/8536.25"
+#cs_file = os.path.join(xbmcvfs.translatePath("special://temp"), cs_name + ".session")
 
-def get_url(**kwargs):
+
+def mk_plugin_url(**kwargs):
     """
     Create a URL for calling the plugin recursively from the given set of keyword arguments.
 
@@ -102,14 +119,11 @@ def get_stream_url(url):
     #print(url)
     cj = CookieJar()
     opener = build_opener(HTTPCookieProcessor(cj))
-	#opener.addheaders = {'User-agent':'Custom user agent'}
-	#opener.version = cs_agent
     p = MyHTMLParser()
     try:
-        request = Request(url)
-        response = opener.open(request)
-        p.feed(response.read().decode('utf-8'))
-        response.close()
+        request = mk_request(url)
+        with opener.open(request) as response:
+            p.feed(read_response_text(response))
         d = p.player_data[0]
         token_id = d.get('streamId')
         if not token_id:
@@ -117,34 +131,18 @@ def get_stream_url(url):
 			#contentid={0}
         url = '{}/player.php?video={}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&embedded=0'.format(p.player_js.split('/js')[0], token_id)
         #print(url)
-        request = Request(url)
-        response = opener.open(request)
-        p.feed(response.read().decode('utf-8'))
-        response.close()
+        request = mk_request(url)
+        with opener.open(request) as response:
+            p.feed(read_response_text(response))
     except (OSError, IOError, RuntimeError) as e:
         dlg = xbmcgui.Dialog()
         dlg.ok('Error', str(e))
         raise e
     return p.stream_url
-#[1,2,30,34,33,3,4]
-CHANNELS = [
-        {'name': 'DunaTV', 'id': 'dunalive', 'id2': 'duna-elo', 'num': '3'},
-        {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'duna-world-elo', 'num': '4'},
-        {'name': 'MTV1', 'id': 'mtv1live', 'id2': 'm1-elo', 'num': '1'},
-        {'name': 'MTV2', 'id': 'mtv2live', 'id2': 'm2-elo', 'num': '2'},
-        {'name': 'MTV4', 'id': 'mtv4live', 'id2': 'm4-elo', 'num': '30'},
-        {'name': 'MTV4+', 'id': 'mtv4live', 'id2': 'm4-sport-plusz-elo', 'num': '34'},
-        {'name': 'MTV5', 'id': 'mtv5live', 'id2': 'm5-elo', 'num': '33'}
-        ]
 
-
-# Free sample videos are provided by www.vidsplay.com
-# Here we use a fixed set of properties simply for demonstrating purposes
 # In a "real life" plugin you will need to get info and links to video files/streams
 # from some web-site or online service.
-
-
-def list_categories():
+def action_initial_fill():
     """
     Create the list of video categories in the Kodi interface.
     """
@@ -167,56 +165,11 @@ def list_categories():
     # is_folder = False means that this item won't open any sub-list.
     is_folder = True
     # Add our item to the Kodi virtual folder listing.
-    xbmcplugin.addDirectoryItem(_handle, get_url(action='search'), list_item, is_folder)
+    xbmcplugin.addDirectoryItem(_handle, mk_plugin_url(action='search'), list_item, is_folder)
     xbmcplugin.endOfDirectory(_handle)
 
 
-def list_videos(category):
-    """
-    Create the list of playable videos in the Kodi interface.
-
-    :param category: Category name
-    :type category: str
-    """
-    # Set plugin category. It is displayed in some skins as the name
-    # of the current section.
-    xbmcplugin.setPluginCategory(_handle, category)
-    # Set plugin content. It allows Kodi to select appropriate views
-    # for this type of content.
-    xbmcplugin.setContent(_handle, 'videos')
-    # Get the list of videos in the category.
-    videos = {} # get_videos(category)
-    # Iterate through videos.
-    for video in videos:
-        # Create a list item with a text label and a thumbnail image.
-        list_item = xbmcgui.ListItem(label=video['name'])
-        # Set additional info for the list item.
-        # 'mediatype' is needed for skin to display info for this ListItem correctly.
-        list_item.setInfo('video', {'title': video['name'],
-                                    'genre': video['genre'],
-                                    'mediatype': 'video'})
-        # Set graphics (thumbnail, fanart, banner, poster, landscape etc.) for the list item.
-        # Here we use the same image for all items for simplicity's sake.
-        # In a real-life plugin you need to set each image accordingly.
-        list_item.setArt({'thumb': video['thumb'], 'icon': video['thumb'], 'fanart': video['thumb']})
-        # Set 'IsPlayable' property to 'true'.
-        # This is mandatory for playable items!
-        list_item.setProperty('IsPlayable', 'true')
-        # Create a URL for a plugin recursive call.
-        # Example: plugin://plugin.video.example/?action=play&video=http://www.vidsplay.com/wp-content/uploads/2017/04/crab.mp4
-        url = get_url(action='play', video=video['video'])
-        # Add the list item to a virtual Kodi folder.
-        # is_folder = False means that this item won't open any sub-list.
-        is_folder = False
-        # Add our item to the Kodi virtual folder listing.
-        xbmcplugin.addDirectoryItem(_handle, url, list_item, is_folder)
-    # Add a sort method for the virtual folder items (alphabetically, ignore articles)
-    xbmcplugin.addSortMethod(_handle, xbmcplugin.SORT_METHOD_LABEL_IGNORE_THE)
-    # Finish creating a virtual folder.
-    xbmcplugin.endOfDirectory(_handle)
-
-
-def play_video(path, video_info):
+def action_play_video(path, video_info):
     """
     Play a video by the provided path.
 
@@ -229,29 +182,30 @@ def play_video(path, video_info):
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
 
-def search_items():
+
+def action_search_items():
+    """
+    Host: mediaklikk.hu
+    User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:70.0) Gecko/20100101 Firefox/70.0
+    Accept: application/json, text/javascript, */*; q=0.01
+    Accept-Language: en-US,en;q=0.5
+    Accept-Encoding: gzip, deflate, br
+    Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+    X-Requested-With: XMLHttpRequest
+    Content-Length: 132
+    Origin: https://mediaklikk.hu
+    DNT: 1
+    Connection: keep-alive
+    Referer: https://mediaklikk.hu/talalati-lista
+    Cookie: __gfp_64b=xxxx.m7; _ga=GA1.; SERVERID=mtvacookieA
+    Pragma: no-cache
+    Cache-Control: no-cache
+
+    action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&skippedPageElements=undefined&pageSize=5&pageNumber=1
+    """
     kb = xbmc.Keyboard()
     kb.doModal()
     if kb.isConfirmed():
-        '''Host: mediaklikk.hu
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:70.0) Gecko/20100101 Firefox/70.0
-Accept: application/json, text/javascript, */*; q=0.01
-Accept-Language: en-US,en;q=0.5
-Accept-Encoding: gzip, deflate, br
-Content-Type: application/x-www-form-urlencoded; charset=UTF-8
-X-Requested-With: XMLHttpRequest
-Content-Length: 132
-Origin: https://mediaklikk.hu
-DNT: 1
-Connection: keep-alive
-Referer: https://mediaklikk.hu/talalati-lista
-Cookie: __gfp_64b=xxxx.m7; _ga=GA1.; SERVERID=mtvacookieA
-Pragma: no-cache
-Cache-Control: no-cache
-
-action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&skippedPageElements=undefined&pageSize=5&pageNumber=1
-'''
-
         p = {
             'action': 'search',
             #'s_type': 'all',
@@ -266,14 +220,11 @@ action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&s
         url='https://www.mediaklikk.hu/wp-content/plugins/hms-mediaklikk/interfaces//get_results.php?{}'.format(urlencode(p))
         cj = CookieJar()
         opener = build_opener(HTTPCookieProcessor(cj))
-        #opener.addheaders = {'User-agent':'Custom user agent'}
-        #opener.version = cs_agent
         resp = '[]'
         try:
-            request = Request(url)#, urlencode(p))
-            response = opener.open(request)
-            resp = response.read().decode('utf-8')
-            response.close()
+            request = mk_request(url)#, urlencode(p))
+            with opener.open(request) as response:
+                resp = read_response_text(response)
         except (OSError, IOError, RuntimeError) as e:
             dlg = xbmcgui.Dialog()
             dlg.ok('Error', str(e))
@@ -312,104 +263,48 @@ action=search&s_type=all&keyword=matrica&fromDate=2013-01-01&toDate=2019-11-24&s
                 list_item.setProperty('IsPlayable', 'true')
                 # Create a URL for a plugin recursive call.
                 # Add our item to the Kodi virtual folder listing.
-                xbmcplugin.addDirectoryItem(_handle, get_url(action='play', video='https:' + src['URL']), list_item, is_folder)
+                xbmcplugin.addDirectoryItem(_handle, mk_plugin_url(action='play', video='https:' + src['URL']), list_item, is_folder)
         xbmcplugin.endOfDirectory(_handle)
 
 
-def router(paramstring):
-    """
-    Router function that calls other functions
-    depending on the provided paramstring
-
-    :param paramstring: URL encoded plugin paramstring
-    :type paramstring: str
-    """
-    # Parse a URL-encoded paramstring to the dictionary of
-    # {<parameter>: <value>} elements
-    params = dict(parse_qsl(paramstring))
-    # Check the parameters passed to the plugin
-    if params:
-        if params['action'] == 'listing':
-            # Display the list of videos in a provided category.
-            list_videos(params['category'])
-        elif params['action'] == 'play':
-            # Play a video from a provided URL.
-            play_video(get_stream_url(params['video']), params.get('video_info', {}))
-        elif params['action'] == 'search':
-            # Play a video from a provided URL.
-            #play_video(get_stream_url(params['video']))
-            search_items()
-        else:
-            # If the provided paramstring does not contain a supported action
-            # we raise an exception. This helps to catch coding errors,
-            # e.g. typos in action names.
-            raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
-    else:
-        # If the plugin is called from Kodi UI without any parameters,
-        # display the list of video categories
-        list_categories()
-
-# setup
-this_addon = xbmcaddon.Addon()
-cs_name = this_addon.getAddonInfo("id")
-cs_profile = this_addon.getAddonInfo("profile")
-cs_file = os.path.join(xbmcvfs.translatePath("special://temp"), cs_name + ".session")
-cs_delay = 5
-
-class CsatornakURLopener(urllib.request.FancyURLopener):
-    version = cs_agent
-
-urllib.request._urlopener = CsatornakURLopener()
-def load_page(pg_url):
-    # load and parse stream
-    # print("Loading: " + pg_url)
-    page = urllib.request.urlopen(pg_url)
-    page_content = page.read()
-    page.close()
-    return page_content
-
 def add_live_tv(c):
+    """ add current and upcoming entries for live tv channel """
     today = date.today()
     now = datetime.now()
     prg_content = None
-    profile_path = Path(xbmcvfs.translatePath( cs_profile ))
-    local_prg_fname = profile_path / 'broadcast_{0}.xml'.format(c['num'])
+    local_prg_fname = PROFILE_PATH / 'broadcast_{0}.xml'.format(c['num'])
 
     if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.stat().st_mtime) == today:
         with local_prg_fname.open('rb') as f:
-            prg_content = f.read()
-    else: #if not prg_content:
+            buff = f.read()
+            if buff:
+                prg_content = buff.decode('utf-8')
+    else:
         prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
         try:
             prg_content = load_page(prg_url)
         except (OSError, IOError, RuntimeError) as e:
-            #dlg = xbmcgui.Dialog()
-            #dlg.ok('Error', str(e)+ '\n' + prg_url)
-            #raise e
-            #return None
+            xbmc.log('Failed to load "' + prg_url + '" ' + str(e), level=xbmc.LOGINFO)
             pass
         profile_path.mkdir(parents=True, exist_ok=True)
         with local_prg_fname.open('wb') as f:
             if prg_content:
-                f.write(prg_content)
+                f.write(prg_content.encode("utf-8"))
     if not prg_content:
          return
-    root_xml = ET.fromstring(prg_content.decode("utf-8"))
+    root_xml = ET.fromstring(prg_content)
     cnt = 0
     for item_xml in root_xml.iter('Item'):
         start_date = None
         date_xml = item_xml.find('Date')
         if date_xml is not None and date_xml.text is not None:
             xbmc.log(date_xml.text, level=xbmc.LOGINFO)
-            xbmc.log(repr(datetime.strptime), level=xbmc.LOGINFO)
             start_date = datetime.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
         play_dt = None
         length_xml = item_xml.find('Length')
         if length_xml is not None and length_xml.text is not None:
             t = datetime.strptime(length_xml.text, '%H:%M:%S')
             play_dt = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        #if start_date > now:
-        #    continue
         if now - start_date > play_dt:
             continue
         title_xml = item_xml.find('SeriesTitle')
@@ -452,7 +347,7 @@ def add_live_tv(c):
         list_item.setProperty('IsPlayable', 'true')
         # Create a URL for a plugin recursive call.
         # Example: plugin://plugin.video.example/?action=play&video=https://www.vidsplay.com/wp-content/uploads/2017/04/crab.mp4
-        url = get_url(action='play', video='https://www.mediaklikk.hu/{}/'.format(c['id2']), video_info=video_info)
+        url = mk_plugin_url(action='play', video='https://www.mediaklikk.hu/{}/'.format(c['id2']), video_info=video_info)
         # Add the list item to a virtual Kodi folder.
         # is_folder = False means that this item won't open any sub-list.
         is_folder = False
@@ -526,22 +421,38 @@ def add_live_tv(c):
 #"""
 
 
+def router(paramstring):
+    """
+    Router function that calls other functions
+    depending on the provided paramstring
+
+    :param paramstring: URL encoded plugin paramstring
+    :type paramstring: str
+    """
+    # Parse a URL-encoded paramstring to the dictionary of
+    # {<parameter>: <value>} elements
+    params = dict(parse_qsl(paramstring))
+    # Check the parameters passed to the plugin
+    if not params:
+        # If the plugin is called from Kodi UI without any parameters,
+        # display fill the list of video entries
+        action_initial_fill()
+    elif params['action'] == 'play':
+        # Play a video from a provided URL.
+        action_play_video(get_stream_url(params['video']), params.get('video_info', {}))
+    elif params['action'] == 'search':
+        # Play a video from a provided URL.
+        action_search_items()
+    else:
+        # If the provided paramstring does not contain a supported action
+        # we raise an exception. This helps to catch coding errors,
+        # e.g. typos in action names.
+        raise ValueError('Invalid paramstring: {0}!'.format(paramstring))
+        
+
 if __name__ == '__main__':
     # Call the router function and pass the plugin call parameters to it.
     # We use string slicing to trim the leading '?' from the plugin call paramstring
-    router(sys.argv[2][1:])
+    xbmc.log('Loaded: ' + str(sys.argv), level=xbmc.LOGINFO)
 
-    #print "Session: " + cs_file
-    # tries to limit deadlocks due to multiple runs
-    # fcntl for file locking may not be available on some platforms
-    #if os.path.exists(cs_file) and time.time() - os.path.getmtime(cs_file) < cs_delay:
-    #	print "Recently ran, exiting."
-    #	sys.exit(0)
-    #else:
-    #	with open(cs_file, "a+"):
-    #	os.utime(cs_file, None)
-    #cs_player = xbmc.Player()
-    # stop playing and wait
-    #cs_player.stop()
-    #while cs_player.isPlaying():
-    #	xbmc.sleep(10)
+    router(sys.argv[2][1:])
