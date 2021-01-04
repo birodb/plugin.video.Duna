@@ -7,12 +7,6 @@
 """
 Example video plugin for online streams
 """
-import xbmc
-import xbmcvfs
-import xbmcaddon
-import xbmcplugin
-import xbmcgui
-
 
 import sys
 import json
@@ -26,8 +20,14 @@ from urllib.request import build_opener, HTTPCookieProcessor, Request
 from urllib.parse import urlencode, parse_qsl
 
 from pathlib import Path
-from datetime import date, datetime, timedelta
-import time
+import datetime as DT
+
+import xbmc
+import xbmcvfs
+import xbmcaddon
+import xbmcplugin
+import xbmcgui
+
 
 
 CS_AGENT = ' '.join(["Mozilla/5.0 (iPhone; CPU iPhone OS 6_1_3 like Mac OS X)",
@@ -363,12 +363,12 @@ class PluginDunaTV:
 
     def add_live_tv(self, c):
         """ add current and upcoming entries for live tv channel """
-        today = date.today()
-        now = datetime.now()
+        today = DT.date.today()
+        now = DT.datetime.now()
         prg_content = None
         local_prg_fname = self.profile_path / 'broadcast_{0}.xml'.format(c['num'])
 
-        if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.stat().st_mtime) == today:
+        if local_prg_fname.exists() and DT.date.fromtimestamp(local_prg_fname.stat().st_mtime) == today:
             with local_prg_fname.open('rb') as f:
                 buff = f.read()
                 if buff:
@@ -392,12 +392,12 @@ class PluginDunaTV:
             date_xml = item_xml.find('Date')
             if date_xml is not None and date_xml.text is not None:
                 #xbmc.log(date_xml.text, level=xbmc.LOGINFO)
-                start_date = datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
+                start_date = DT.datetime.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
             play_dt = None
             length_xml = item_xml.find('Length')
             if length_xml is not None and length_xml.text is not None:
-                t = time.strptime(length_xml.text, '%H:%M:%S')
-                play_dt = timedelta(hours=t.tm_hour, minutes=t.tm_min, seconds=t.tm_sec)
+                t = DT.time.strptime(length_xml.text, '%H:%M:%S')
+                play_dt = DT.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
             if not start_date or not play_dt or now - start_date > play_dt:
                 continue
             title_xml = item_xml.find('SeriesTitle')
