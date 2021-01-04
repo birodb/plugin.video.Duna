@@ -446,6 +446,6 @@ class PluginDunaTV:
 if __name__ == '__main__':
     xbmc.log('__main__ reached: ' + str(sys.argv), level=xbmc.LOGINFO)
     #Create a plugin with the parameters passed to it.
-    this_plugin = PluginDunaTV(argv)
+    this_plugin = PluginDunaTV(sys.argv)
     #Call the router function.
     this_plugin.route()
