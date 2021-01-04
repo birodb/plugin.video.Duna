@@ -373,7 +373,7 @@ class PluginDunaTV:
                 if prg_content:
                     f.write(prg_content.encode("utf-8"))
         if not prg_content:
-             return
+            return
         root_xml = ET.fromstring(prg_content)
         cnt = 0
         for item_xml in root_xml.iter('Item'):
@@ -387,7 +387,7 @@ class PluginDunaTV:
             if length_xml is not None and length_xml.text is not None:
                 t = datetime.strptime(length_xml.text, '%H:%M:%S')
                 play_dt = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-            if now - start_date > play_dt:
+            if not start_date or not play_dt or now - start_date > play_dt:
                 continue
             title_xml = item_xml.find('SeriesTitle')
             if title_xml is None or title_xml.text is None:
