@@ -141,7 +141,15 @@ class MyHTMLParser(HTMLParser):
 #div class='hmsArticleViewerVideo'>
 #div id="player_81925_1" class="live-player-container"></div>
 #<p><script defer type="text/javascript">
-#				mtva_player_manager.player(document.getElementById("player_81925_1"), {"token":"U2FsdGVkX1%2B%2F635p7jQljbzG6a9v6vrE0mnSBqna0wIuavyQ73V5ah9DKXTf1LSFdevSodT%2B%2F9qmMQoXAHV5PqUXZ1xdf2OLKdbsAyNjIrn4KREoKvCOwPlKK1tn9sCXJPwH9YHi36O6qQ3zm3DQQKB7TownSWp7pp8RNX7KVFQ%3D","autostart":false,"debug":false,"bgImage":"\/\/mediaklikk.cms.mtv.hu\/wp-content\/uploads\/sites\/4\/2015\/04\/Egynyári-kaland-1.epizód-fotókredit-MTVA-Megafilm-Bara-Szilvia-6-e1554212213668-1024x576.jpg","adVastPreroll":"https:\/\/gemhu.adocean.pl\/ad.xml?id=VAAxe3zcXKSHojvBEJMZNkSV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria, 1. rész), Beköltözés ","series":"Egyéb","contentId":838544,"embedded":true});
+#				mtva_player_manager.player(document.getElementById("player_81925_1"), 
+#      {"token":"U2FsdGVkX1%2B%2F635p7jQljbzG6a9v6vrE0mnSBqna0wIuavyQ73V5ah9DKXTf1LSFdevSodT
+#       %2B%2F9qmMQoXAHV5PqUXZ1xdf2OLKdbsAyNjIrn4KREoKvCOwPlKK1tn9sCXJPwH9YHi36O6qQ3zm3DQQKB7Town
+#       SWp7pp8RNX7KVFQ%3D","autostart":false,"debug":false,"bgImage":
+#       "\/\/mediaklikk.cms.mtv.hu\/wp-content\/uploads\/sites\/4\/2015\/04\/Egynyári-kaland-1
+#       .epizód-fotókredit-MTVA-Megafilm-Bara-Szilvia-6-e1554212213668-1024x576.jpg",
+#       "adVastPreroll":"https:\/\/gemhu.adocean.pl\/ad.xml?id=VAAxe3zcXKSHojvBEJMZNk
+#       SV4cWy78e2KTpdrMG.iPP.r7\/aocodetype=1","title":"Egynyári kaland (1. széria, 
+#       1. rész), Beköltözés ","series":"Egyéb","contentId":838544,"embedded":true});
 #</script></div>
 #"""
 
@@ -151,7 +159,9 @@ class PluginDunaTV:
     def __init__(self, argv):
         self.base_url = argv[0]
         self.addon = xbmcaddon.Addon(self.base_url.split('/')[-2])
-        self.profile_path = Path( xbmcvfs.translatePath(self.addon.getAddonInfo("profile")))
+        self.profile_path = Path(xbmcvfs.translatePath(self.addon.getAddonInfo("profile")))
+        #ensure profile directory exists
+        self.profile_path.mkdir(parents=True, exist_ok=True)
         self.handle = int(argv[1])
         # We use string slicing to trim the leading '?' from the plugin call paramstring
         paramstr = argv[2][1:]
@@ -233,7 +243,7 @@ class PluginDunaTV:
             token_id = d.get('streamId')
             if not token_id:
                 token_id = d.get('token')
-            webplayer_url = '{}/player.php?video={}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&embedded=0'.format(p.player_js.split('/js')[0], token_id)
+            webplayer_url = '{}/player.php?video={}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&embedded=0'.format(html_parser.player_js.split('/js')[0], token_id)
             webplayer_site = self.load_page_decoded(webplayer_url)
             html_parser.feed(webplayer_site)
         except (OSError, IOError, RuntimeError) as e:
@@ -295,20 +305,20 @@ class PluginDunaTV:
             if isinstance(r, list) and len(r) == 1:
                 r = r[0]
             else:
-                raise RuntimeError(search_url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+search_resp)
             if isinstance(r, dict) and 'data' in r:
                 r = r['data']
             else:
-                raise RuntimeError(search_url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+search_resp)
             if isinstance(r, dict) and 'items' in r:
                 r = r['items']
             else:
-                raise RuntimeError(search_url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+search_resp)
             if isinstance(r, list):# and len(r) == 1:
                 #r = r[0]
                 pass
             else:
-                raise RuntimeError(search_url +'\n'+resp)
+                raise RuntimeError(search_url +'\n'+search_resp)
             for i in r:
                 src = i.get('source', {})
                 title = i.get('post_title','')
@@ -369,7 +379,6 @@ class PluginDunaTV:
             except (OSError, IOError, RuntimeError) as e:
                 xbmc.log('Failed to load "' + prg_url + '" ' + str(e), level=xbmc.LOGINFO)
                 pass
-            profile_path.mkdir(parents=True, exist_ok=True)
             with local_prg_fname.open('wb') as f:
                 if prg_content:
                     f.write(prg_content.encode("utf-8"))
