@@ -392,7 +392,7 @@ class PluginDunaTV:
             date_xml = item_xml.find('Date')
             if date_xml is not None and date_xml.text is not None:
                 xbmc.log(date_xml.text, level=xbmc.LOGINFO)
-                xbmc.log(datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6])), level=xbmc.LOGINFO)
+                #xbmc.log(datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6])), level=xbmc.LOGINFO)
                 start_date = datetime(*(time.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')[0:6]))
             play_dt = None
             length_xml = item_xml.find('Length')
