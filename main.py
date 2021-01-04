@@ -400,7 +400,8 @@ def add_live_tv(c):
         start_date = None
         date_xml = item_xml.find('Date')
         if date_xml is not None and date_xml.text is not None:
-            xbmc.log(date_xml.text)
+            xbmc.log(date_xml.text, level=xbmc.LOGINFO)
+            xbmc.log(repl(datetime.strptime), level=xbmc.LOGINFO)
             start_date = datetime.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
         play_dt = None
         length_xml = item_xml.find('Length')
