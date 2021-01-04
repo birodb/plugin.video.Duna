@@ -394,14 +394,14 @@ def add_live_tv(c):
                 f.write(prg_content)
     if not prg_content:
          return
-    root = ET.fromstring(prg_content.decode("utf-8"))
+    root_xml = ET.fromstring(prg_content.decode("utf-8"))
     cnt = 0
-    for item in root.iter('Item'):
+    for item_xml in root_xml.iter('Item'):
         start_date = None
-        date_xml = item.find('Date')
+        date_xml = item_xml.find('Date')
         if date_xml is not None and date_xml.text is not None:
             start_date = datetime.strptime(date_xml.text, '%Y-%m-%d %H:%M:%S')
-        length_xml = item.find('Length')
+        length_xml = item_xml.find('Length')
         play_dt = None
         if length_xml is not None and length_xml.text is not None:
             t = datetime.strptime(length_xml.text, '%H:%M:%S')
@@ -410,16 +410,16 @@ def add_live_tv(c):
         #    continue
         if now - start_date > play_dt:
             continue
-        title_xml = item.find('SeriesTitle')
+        title_xml = item_xml.find('SeriesTitle')
         if title_xml is None or title_xml.text is None:
-            title_xml = item.find('Title')
+            title_xml = item_xml.find('Title')
         title = str(title_xml.text)
-        descr_xml = item.find('Description')
+        descr_xml = item_xml.find('Description')
         description = None
         if descr_xml is not None and descr_xml.text is not None:
             description = str(descr_xml.text)
         #title += '.'
-        #for child in item:
+        #for child in item_xml:
         #    if child.text:
         #        s +=  child.tag + ': ' + str(child.text) +'; '
         #xbmcgui.Dialog().ok(cs_name, s, json.dumps(sys.argv), str(today))
