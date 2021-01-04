@@ -374,12 +374,19 @@ def add_live_tv(c):
     prg_content = None
     profile_path = Path(xbmcvfs.translatePath( cs_profile ))
     local_prg_fname = profile_path / 'broadcast_{0}.xml'.format(c['num'])
+
     if local_prg_fname.exists() and date.fromtimestamp(local_prg_fname.stat().st_mtime) == today:
         with local_prg_fname.open('rb') as f:
             prg_content = f.read()
     else: #if not prg_content:
         prg_url = 'https://www.mediaklikk.hu/iface/broadcast/{0}/broadcast_{1}.xml'.format(str(today), c['num'])
-        prg_content = load_page(prg_url)
+        try:
+            prg_content = load_page(prg_url)
+        except (OSError, IOError, RuntimeError) as e:
+            dlg = xbmcgui.Dialog()
+            dlg.ok('Error', str(e))
+            #raise e
+            return None
         profile_path.mkdir(parents=True, exist_ok=True)
         with local_prg_fname.open('wb') as f:
             f.write(prg_content)
@@ -447,7 +454,7 @@ def add_live_tv(c):
         xbmcplugin.addDirectoryItem(_handle, url, list_item, is_folder)
 
         cnt = cnt + 1
-        if cnt > 2:
+        if cnt > 4:
             break
 
 
