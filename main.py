@@ -397,7 +397,7 @@ class PluginDunaTV:
             play_dt = None
             length_xml = item_xml.find('Length')
             if length_xml is not None and length_xml.text is not None:
-                t = time.strptime(length_xml.text, '%H:%M:%S')
+                t = datetime(*(time.strptime(length_xml.text, '%H:%M:%S')[0:6]))
                 play_dt = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
             if not start_date or not play_dt or now - start_date > play_dt:
                 continue
