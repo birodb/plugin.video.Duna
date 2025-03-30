@@ -38,13 +38,14 @@ REQ_HEADERS = {'User-Agent': CS_AGENT}
 
 #[1,2,30,34,33,3,4]
 CHANNELS = [
-        {'name': 'Duna', 'id': 'dunalive', 'id2': 'duna-elo', 'num': '3'},
-        {'name': 'DunaWorld', 'id': 'dunaworldlive', 'id2': 'duna-world-elo', 'num': '4'},
-        {'name': 'M1', 'id': 'mtv1live', 'id2': 'm1-elo', 'num': '1'},
-        {'name': 'M2', 'id': 'mtv2live', 'id2': 'm2-elo', 'num': '2'},
-        {'name': 'M4', 'id': 'mtv4live', 'id2': 'm4-elo', 'num': '30'},
-        {'name': 'M4+', 'id': 'mtv4live', 'id2': 'm4-sport-plusz-elo', 'num': '34'},
-        {'name': 'M5', 'id': 'mtv5live', 'id2': 'm5-elo', 'num': '33'}
+        {'name': 'Duna', 'id': 'dunalive', 'id2': 'https://mediaklikk.hu/duna-elo/', 'num': '3'},
+        {'name': 'Duna World', 'id': 'dunaworldlive', 'id2': 'https://mediaklikk.hu/duna-world-elo/', 'num': '4'},
+        {'name': 'M1', 'id': 'mtv1live', 'id2': 'https://hirado.hu/elo/m1/', 'num': '1'},
+        {'name': 'M2', 'id': 'mtv2live', 'id2': 'https://mediaklikk.hu/m2-elo/', 'num': '2'},
+        #{'name': 'M3', 'id': 'mtv3live', 'id2': 'https://archivum.mtva.hu/m3/', 'num': '26'},
+        {'name': 'M4 Sport', 'id': 'mtv4live', 'id2': 'https://m4sport.hu/elo/', 'num': '30'},
+        {'name': 'M4 Sport +', 'id': 'mtv4live', 'id2': 'https://m4sport.hu/elo/mtv4plus/', 'num': '34'},
+        {'name': 'M5', 'id': 'mtv5live', 'id2': 'https://mediaklikk.hu/m5-elo/', 'num': '33'}
         ]
 
 class MyHTMLParser(HTMLParser):
@@ -61,7 +62,7 @@ class MyHTMLParser(HTMLParser):
         if tag == "script":
             if attrs:
                 src = dict(attrs).get("src", "")
-                if "player.js" in src:
+                if "mtva-player.js" in src:
                     #print("Encountered a start tag:", tag, attrs)
                     self.player_js = src
 
@@ -80,7 +81,7 @@ class MyHTMLParser(HTMLParser):
                 for i in re.finditer('pl.setup\\(\\s*(\\{[^;]+)\\);', data):
                     setup_data = json.loads(i.group(1))
                     pl = setup_data.get('playlist', [])
-                    self.stream_url = 'https:' + pl[1 if len(pl) > 1 else 0]['file']
+                    self.stream_url = pl[1 if len(pl) > 1 else 0]['file']
                     #self.player_data.append(pl)
                     #print("Encountered some data  :", json.dumps(setup_data))
 
@@ -112,6 +113,7 @@ class MyHTMLParser(HTMLParser):
 #       var currentSetup = clone_object(defaultSetup);
 #""
 #""
+#https://player.mediaklikk.hu/playernew/player.php?video=mtv4live&noflash=yes&vastpreroll=https://pubads.g.doubleclick.net/gampad/live/ads?iu=/22652647/m4_preroll&description_url=&tfcd=0&npa=0&sz=640x360&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=&osfamily=OS X&osversion=10.15&browsername=Firefox&browserversion=136.0&title=M4 Sport&contentid=mtv4live&embedded=0&sourceUrl=https://m4sport.hu/elo/
 #https://player.mediaklikk.hu/playernew/player.php?video=mtv1live&noflash=yes&osfamily=OS X&osversion=10.14&browsername=Firefox&browserversion=66.0&title=M1&contentid=mtv1live&embedded=0
 #       <script>jwplayer.key="G1TfeXueehbr/n/4/MCAEQq/kWlgDr1vbiAgbbRu5HCfpFmI";</script>
 #div id="player"></div>
@@ -191,9 +193,13 @@ class PluginDunaTV:
         return buff.decode(encoding)
 
 
-    def load_page_decoded(self, url):
+    def load_page_decoded(self, url, referer=None):
         """load page data"""
-        request = Request(url, headers=REQ_HEADERS)
+        hdr = dict(REQ_HEADERS)
+        if referer is not None:
+            hdr['Referer'] = referer
+
+        request = Request(url, headers=hdr)
         with self.opener.open(request) as response:
             return PluginDunaTV.read_response_decoded(response)
 
@@ -244,13 +250,18 @@ class PluginDunaTV:
             token_id = d.get('streamId')
             if not token_id:
                 token_id = d.get('token')
-            webplayer_url = '{}/player.php?video={}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&embedded=0'.format(html_parser.player_js.split('/js')[0], token_id)
-            webplayer_site = self.load_page_decoded(webplayer_url)
+            webplayer_url = '{}/player.php?video={}&noflash=yes&osfamily=OS%20X&osversion=10.13&browsername=Firefox&browserversion=60.0&title=Duna&embedded=0&sourceUrl={}'.format(html_parser.player_js.split('/js')[0], token_id, web_url)
+
+            #dlg = xbmcgui.Dialog()
+            #dlg.ok('Error', str(webplayer_url))
+            webplayer_site = self.load_page_decoded(webplayer_url, web_url)
             html_parser.feed(webplayer_site)
         except (OSError, IOError, RuntimeError) as e:
             dlg = xbmcgui.Dialog()
             dlg.ok('Error', str(e))
             raise e
+        #dlg = xbmcgui.Dialog()
+        #dlg.ok('Error', str(html_parser.stream_url))
         return html_parser.stream_url
 
     def action_search_items(self):
@@ -289,7 +300,7 @@ class PluginDunaTV:
             }
             search_resp = '[]'
             try:
-                search_url='https://www.mediaklikk.hu/wp-content/plugins/hms-mediaklikk/interfaces//get_results.php?{}'.format(urlencode(p))
+                search_url='https://www.mediaklikk.hu/wp-content/plugins/hms-mediaklikk/interfaces/get_results.php?{}'.format(urlencode(p))
                 search_resp = self.load_page_decoded(search_url)
             except (OSError, IOError, RuntimeError) as e:
                 dlg = xbmcgui.Dialog()
@@ -329,7 +340,8 @@ class PluginDunaTV:
                     list_item.setProperty('IsPlayable', 'true')
                     # Create a URL for a plugin recursive call.
                     # Add our item to the Kodi virtual folder listing.
-                    xbmcplugin.addDirectoryItem(self.handle, self.build_url(action='play', video='https:' + src['URL']), list_item, is_folder)
+                    #xbmcplugin.addDirectoryItem(self.handle, self.build_url(action='play', video='https:' + src['URL']), list_item, is_folder)
+                    xbmcplugin.addDirectoryItem(self.handle, self.build_url(action='play', video=src['URL']), list_item, is_folder)
             xbmcplugin.endOfDirectory(self.handle)
 
     # In a "real life" plugin you will need to get info and links to video files/streams
@@ -440,7 +452,7 @@ class PluginDunaTV:
             list_item.setProperty('IsPlayable', 'true')
             # Create a URL for a plugin recursive call.
             # Example: plugin://plugin.video.example/?action=play&video=https://www.vidsplay.com/wp-content/uploads/2017/04/crab.mp4
-            url = self.build_url(action='play', video='https://www.mediaklikk.hu/{}/'.format(c['id2']), video_info=video_info)
+            url = self.build_url(action='play', video=c['id2'], video_info=video_info)
             # Add the list item to a virtual Kodi folder.
             # is_folder = False means that this item won't open any sub-list.
             is_folder = False
